@@ -1,0 +1,2948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tsunami Warning Command</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg0: #020814;
+      --bg1: #06172b;
+      --bg2: #082c46;
+      --cyan: #19e6ff;
+      --cyan-soft: rgba(25, 230, 255, 0.16);
+      --blue: #2587ff;
+      --green: #3cffb1;
+      --yellow: #ffd166;
+      --orange: #ff985c;
+      --red: #ff3b5c;
+      --purple: #a98cff;
+      --text: #eefbff;
+      --muted: #95b8c8;
+      --glass: rgba(7, 24, 44, 0.74);
+      --glass2: rgba(8, 35, 59, 0.86);
+      --line: rgba(149, 232, 255, 0.18);
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      --radius: 8px;
+      --dangerGlow: rgba(255, 59, 92, 0);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg0);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(25, 230, 255, 0.18), transparent 28%),
+        radial-gradient(circle at 84% 6%, rgba(37, 135, 255, 0.15), transparent 24%),
+        linear-gradient(145deg, #020814 0%, #06172b 50%, #082c46 100%);
+    }
+
+    body.alert {
+      animation: alertPulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { box-shadow: inset 0 0 0 0 var(--dangerGlow); }
+      50% { box-shadow: inset 0 0 110px 30px rgba(255, 59, 92, 0.26); }
+    }
+
+    .ocean-bg, .clouds, .rain, .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ocean-bg {
+      z-index: 0;
+      opacity: 0.8;
+      background:
+        repeating-linear-gradient(170deg, transparent 0 42px, rgba(25, 230, 255, 0.045) 43px 46px, transparent 47px 92px),
+        linear-gradient(180deg, transparent 0 52%, rgba(12, 96, 137, 0.22) 53%, rgba(4, 34, 61, 0.64) 100%);
+    }
+
+    .ocean-bg::before,
+    .ocean-bg::after {
+      content: "";
+      position: absolute;
+      left: -20%;
+      right: -20%;
+      height: 40vh;
+      bottom: -5vh;
+      background:
+        radial-gradient(ellipse at 12% 20%, rgba(25, 230, 255, 0.25), transparent 18%),
+        radial-gradient(ellipse at 38% 15%, rgba(255, 255, 255, 0.13), transparent 17%),
+        radial-gradient(ellipse at 70% 22%, rgba(25, 230, 255, 0.2), transparent 19%),
+        linear-gradient(180deg, rgba(21, 167, 206, 0.2), rgba(1, 24, 44, 0.78));
+      clip-path: polygon(0 45%, 8% 38%, 17% 48%, 28% 31%, 40% 49%, 54% 34%, 67% 46%, 78% 35%, 91% 47%, 100% 40%, 100% 100%, 0 100%);
+      animation: waveMove 11s ease-in-out infinite;
+    }
+
+    .ocean-bg::after {
+      opacity: 0.55;
+      bottom: 7vh;
+      animation-duration: 17s;
+      animation-direction: reverse;
+    }
+
+    @keyframes waveMove {
+      0%, 100% { transform: translateX(0) translateY(0); }
+      50% { transform: translateX(80px) translateY(18px); }
+    }
+
+    .clouds {
+      z-index: 1;
+      background:
+        radial-gradient(ellipse at 8% 10%, rgba(255,255,255,0.16), transparent 12%),
+        radial-gradient(ellipse at 44% 16%, rgba(255,255,255,0.13), transparent 10%),
+        radial-gradient(ellipse at 76% 9%, rgba(255,255,255,0.12), transparent 14%);
+      animation: cloudDrift 45s linear infinite;
+    }
+
+    @keyframes cloudDrift {
+      from { transform: translateX(-4%); }
+      to { transform: translateX(4%); }
+    }
+
+    .rain {
+      z-index: 2;
+      opacity: 0;
+      background-image: repeating-linear-gradient(105deg, transparent 0 15px, rgba(190, 240, 255, 0.28) 16px 18px, transparent 19px 34px);
+      background-size: 220px 220px;
+      animation: rainFall 0.9s linear infinite;
+      transition: opacity 400ms ease;
+    }
+
+    body.storm .rain { opacity: 0.42; }
+
+    @keyframes rainFall {
+      from { background-position: 0 0; }
+      to { background-position: -80px 220px; }
+    }
+
+    .particles {
+      z-index: 3;
+      background-image:
+        radial-gradient(circle, rgba(25, 230, 255, 0.45) 0 1px, transparent 2px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.32) 0 1px, transparent 2px);
+      background-size: 90px 90px, 140px 140px;
+      animation: particleFloat 26s linear infinite;
+      opacity: 0.45;
+    }
+
+    @keyframes particleFloat {
+      to { background-position: 180px -260px, -220px -180px; }
+    }
+
+    .shake {
+      animation: quakeShake 420ms linear 3;
+    }
+
+    @keyframes quakeShake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-5px, 3px); }
+      40% { transform: translate(4px, -4px); }
+      60% { transform: translate(-3px, -2px); }
+      80% { transform: translate(5px, 2px); }
+    }
+
+    button, input, select { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      border-radius: var(--radius);
+      color: var(--text);
+      background: rgba(25, 230, 255, 0.14);
+      border: 1px solid rgba(25, 230, 255, 0.25);
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(25, 230, 255, 0.55);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26), 0 0 24px rgba(25, 230, 255, 0.12);
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(25, 230, 255, 0.78);
+      outline-offset: 3px;
+    }
+
+    .app {
+      position: relative;
+      z-index: 4;
+      width: min(1480px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 36px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .glass {
+      background: linear-gradient(180deg, rgba(9, 34, 61, 0.82), rgba(5, 22, 39, 0.72));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .start-shell {
+      min-height: calc(100vh - 36px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hero {
+      padding: clamp(24px, 5vw, 56px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: radial-gradient(circle at 22% 20%, rgba(25, 230, 255, 0.2), transparent 30%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 11px;
+      margin-bottom: 18px;
+      color: var(--cyan);
+      background: rgba(25, 230, 255, 0.08);
+      border: 1px solid rgba(25, 230, 255, 0.22);
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 16px;
+      font-size: clamp(3rem, 8vw, 7.2rem);
+      line-height: 0.88;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 0 35px rgba(25, 230, 255, 0.22);
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: clamp(1.2rem, 2vw, 1.75rem);
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .hero-copy {
+      max-width: 780px;
+      font-size: 1.08rem;
+    }
+
+    .start-actions, .mode-grid, .difficulty-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mode-btn, .difficulty-btn {
+      min-height: 48px;
+      padding: 11px 14px;
+      font-weight: 900;
+    }
+
+    .mode-btn.active, .difficulty-btn.active {
+      background: linear-gradient(135deg, rgba(25, 230, 255, 0.34), rgba(60, 255, 177, 0.14));
+      border-color: rgba(25, 230, 255, 0.75);
+    }
+
+    .primary {
+      min-height: 50px;
+      padding: 13px 18px;
+      color: #00131c;
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+      border-color: rgba(255, 255, 255, 0.28);
+      font-weight: 1000;
+    }
+
+    .red-btn {
+      min-height: 50px;
+      padding: 13px 18px;
+      background: linear-gradient(135deg, rgba(255, 59, 92, 0.95), rgba(255, 152, 92, 0.88));
+      border-color: rgba(255, 210, 210, 0.36);
+      font-weight: 1000;
+    }
+
+    .blue-btn {
+      min-height: 50px;
+      padding: 13px 18px;
+      background: linear-gradient(135deg, rgba(37, 135, 255, 0.76), rgba(25, 230, 255, 0.24));
+      font-weight: 1000;
+    }
+
+    .cinematic-map {
+      min-height: 620px;
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+    }
+
+    .globe {
+      position: absolute;
+      inset: 52px 24px 40px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(25, 230, 255, 0.15), transparent 18%),
+        radial-gradient(circle at 55% 65%, rgba(60, 255, 177, 0.1), transparent 16%),
+        repeating-radial-gradient(circle at 50% 50%, transparent 0 38px, rgba(25, 230, 255, 0.12) 39px 41px),
+        linear-gradient(145deg, rgba(7, 67, 101, 0.62), rgba(3, 18, 36, 0.96));
+      border: 1px solid rgba(25, 230, 255, 0.22);
+      box-shadow: inset 0 0 90px rgba(25, 230, 255, 0.12), 0 0 70px rgba(25, 230, 255, 0.12);
+    }
+
+    .globe::before {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border: 1px solid rgba(25, 230, 255, 0.24);
+      border-radius: 50%;
+      animation: radarSpin 4s linear infinite;
+      background: conic-gradient(from 0deg, rgba(25,230,255,0.42), transparent 16%, transparent);
+      mask: radial-gradient(circle, transparent 0 44%, #000 45% 48%, transparent 49%);
+    }
+
+    @keyframes radarSpin { to { transform: rotate(360deg); } }
+
+    .coast-line {
+      position: absolute;
+      inset: 22% 12% 18% 19%;
+      border-radius: 44% 56% 49% 51%;
+      border-left: 8px solid rgba(255, 209, 102, 0.78);
+      border-top: 3px solid rgba(255, 209, 102, 0.42);
+      transform: rotate(-14deg);
+      filter: drop-shadow(0 0 14px rgba(255, 209, 102, 0.26));
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .top-hud {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+    }
+
+    .brand-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .brand-title {
+      font-weight: 1000;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .year-pill, .mode-pill {
+      padding: 7px 10px;
+      color: var(--cyan);
+      background: rgba(25, 230, 255, 0.08);
+      border: 1px solid rgba(25, 230, 255, 0.18);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 900;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      min-height: 38px;
+      padding: 8px 10px;
+      font-weight: 900;
+    }
+
+    .speed-btn.active {
+      color: #00131c;
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+    }
+
+    .side, .main, .right {
+      display: grid;
+      gap: 12px;
+    }
+
+    .side, .right {
+      display: none;
+    }
+
+    .command-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .command-tile {
+      min-height: 86px;
+      padding: 13px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .command-tile::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 3px;
+      background: var(--cyan);
+      opacity: 0.8;
+    }
+
+    .command-tile.safe::after { background: var(--green); }
+    .command-tile.warn::after { background: var(--yellow); }
+    .command-tile.danger::after { background: var(--red); }
+    .command-tile.tech::after { background: var(--purple); }
+
+    .command-tile span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 1000;
+      text-transform: uppercase;
+    }
+
+    .command-tile strong {
+      display: block;
+      margin-top: 7px;
+      font-size: clamp(1.05rem, 2vw, 1.55rem);
+    }
+
+    .next-step {
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(25, 230, 255, 0.22);
+      border-radius: var(--radius);
+      background: rgba(25, 230, 255, 0.07);
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .mission-line {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .tab-btn.locked {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .panel {
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .panel-head h2, .panel-head h3 { margin-bottom: 0; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat {
+      padding: 11px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.12rem;
+      color: var(--text);
+    }
+
+    .meter {
+      display: grid;
+      gap: 6px;
+      margin: 10px 0;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .bar {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 50%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      transition: width 280ms ease, background 280ms ease;
+    }
+
+    .map-panel {
+      min-height: 520px;
+      position: relative;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .world-map {
+      position: relative;
+      height: 520px;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(25, 230, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25, 230, 255, 0.08) 1px, transparent 1px),
+        radial-gradient(circle at 30% 38%, rgba(25, 230, 255, 0.18), transparent 18%),
+        radial-gradient(circle at 72% 58%, rgba(60, 255, 177, 0.1), transparent 20%),
+        linear-gradient(140deg, rgba(8, 54, 91, 0.92), rgba(2, 11, 25, 0.96));
+      background-size: 42px 42px, 42px 42px, auto, auto, auto;
+    }
+
+    .world-map::before {
+      content: "";
+      position: absolute;
+      inset: -18%;
+      background: conic-gradient(from 40deg at 50% 50%, rgba(25, 230, 255, 0.2), transparent 18%, transparent 62%, rgba(25, 230, 255, 0.14));
+      animation: slowSpin 20s linear infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes slowSpin { to { transform: rotate(360deg); } }
+
+    .plate {
+      position: absolute;
+      border: 1px dashed rgba(255, 209, 102, 0.36);
+      border-radius: 45%;
+      transform: rotate(var(--r));
+      opacity: 0.7;
+    }
+
+    .city-dot, .sensor-dot, .quake-dot, .storm-dot, .ash-cloud, .building-dot {
+      position: absolute;
+      z-index: 2;
+      translate: -50% -50%;
+    }
+
+    .city-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid rgba(255, 255, 255, 0.78);
+      box-shadow: 0 0 0 0 rgba(60, 255, 177, 0.3), 0 0 24px rgba(60, 255, 177, 0.36);
+      animation: mapPulse 2.5s infinite;
+    }
+
+    .city-dot.danger {
+      background: var(--red);
+      animation: dangerPulse 0.8s infinite;
+    }
+
+    .city-dot.evacuating {
+      background: var(--yellow);
+      animation: dangerPulse 1.1s infinite;
+    }
+
+    .city-dot.damaged {
+      background: #6f7d87;
+      box-shadow: 0 0 18px rgba(255, 59, 92, 0.42);
+    }
+
+    .city-label {
+      position: absolute;
+      left: 15px;
+      top: -8px;
+      white-space: nowrap;
+      padding: 3px 6px;
+      color: var(--text);
+      background: rgba(0, 10, 20, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    @keyframes mapPulse {
+      70% { box-shadow: 0 0 0 18px rgba(60, 255, 177, 0), 0 0 24px rgba(60, 255, 177, 0.36); }
+    }
+
+    @keyframes dangerPulse {
+      70% { box-shadow: 0 0 0 24px rgba(255, 59, 92, 0), 0 0 34px rgba(255, 59, 92, 0.66); }
+    }
+
+    .sensor-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--cyan);
+      box-shadow: 0 0 18px rgba(25, 230, 255, 0.9);
+      transform: rotate(45deg);
+    }
+
+    .storm-dot {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 2px solid rgba(190, 240, 255, 0.36);
+      background: radial-gradient(circle, rgba(190, 240, 255, 0.18), transparent 65%);
+      animation: slowSpin 3s linear infinite;
+    }
+
+    .ash-cloud {
+      width: 86px;
+      height: 54px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 45%, rgba(170, 186, 194, 0.38), transparent 40%),
+        radial-gradient(circle at 64% 36%, rgba(210, 220, 225, 0.28), transparent 44%);
+      filter: blur(1px);
+      animation: cloudDrift 8s ease-in-out infinite;
+    }
+
+    .building-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: var(--yellow);
+      box-shadow: 0 0 12px rgba(255, 209, 102, 0.55);
+    }
+
+    .power-line {
+      position: absolute;
+      z-index: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 209, 102, 0.55), transparent);
+      transform-origin: left center;
+      opacity: 0.7;
+    }
+
+    .quake-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 0 0 rgba(255, 152, 92, 0.42), 0 0 30px rgba(255, 152, 92, 0.62);
+      animation: dangerPulse 1s infinite;
+    }
+
+    .wave-ring {
+      position: absolute;
+      z-index: 1;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(25, 230, 255, 0.72);
+      border-radius: 50%;
+      translate: -50% -50%;
+      animation: waveExpand 3.8s ease-out forwards;
+    }
+
+    @keyframes waveExpand {
+      from { width: 16px; height: 16px; opacity: 0.95; }
+      to { width: var(--size); height: var(--size); opacity: 0; }
+    }
+
+    .route {
+      position: absolute;
+      height: 2px;
+      z-index: 1;
+      background: linear-gradient(90deg, transparent, rgba(60, 255, 177, 0.85), transparent);
+      transform-origin: left center;
+      opacity: 0.8;
+      animation: routeFlash 1.6s ease-in-out infinite;
+    }
+
+    @keyframes routeFlash {
+      50% { opacity: 0.22; }
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .sensor-card {
+      min-height: 88px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sensor-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent, rgba(25, 230, 255, 0.1), transparent);
+      transform: translateX(-100%);
+      animation: scanLine 3s ease-in-out infinite;
+    }
+
+    @keyframes scanLine {
+      60%, 100% { transform: translateX(100%); }
+    }
+
+    .sensor-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .sensor-card strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 1.15rem;
+    }
+
+    .risk-panel {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+    }
+
+    .risk-dial {
+      width: 116px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--red) var(--risk), rgba(255, 255, 255, 0.08) 0);
+      box-shadow: 0 0 35px rgba(255, 59, 92, 0.14);
+    }
+
+    .risk-dial span {
+      width: 82px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #06172b;
+      font-size: 1.8rem;
+      font-weight: 1000;
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .decision-grid button {
+      min-height: 62px;
+      padding: 10px;
+      font-weight: 1000;
+    }
+
+    .decision-grid button small {
+      display: block;
+      margin-top: 4px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .correct-banner {
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(60, 255, 177, 0.35);
+      background: linear-gradient(135deg, rgba(60, 255, 177, 0.16), rgba(25, 230, 255, 0.08));
+      animation: resultPop 280ms ease;
+    }
+
+    .correct-banner.bad {
+      border-color: rgba(255, 59, 92, 0.45);
+      background: linear-gradient(135deg, rgba(255, 59, 92, 0.18), rgba(255, 152, 92, 0.08));
+    }
+
+    .correct-banner.warn {
+      border-color: rgba(255, 209, 102, 0.45);
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.16), rgba(25, 230, 255, 0.06));
+    }
+
+    @keyframes resultPop {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .banner-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-weight: 1000;
+    }
+
+    .verdict {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.28);
+      color: var(--green);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .correct-banner.bad .verdict { color: var(--red); }
+    .correct-banner.warn .verdict { color: var(--yellow); }
+
+    .tabs {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+    }
+
+    .tab-btn {
+      flex: 0 0 auto;
+      padding: 9px 10px;
+      font-size: 0.78rem;
+      font-weight: 1000;
+      text-transform: uppercase;
+    }
+
+    .tab-btn.active {
+      background: rgba(25, 230, 255, 0.22);
+      border-color: rgba(25, 230, 255, 0.65);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .shop-list, .city-list, .event-feed, .achievement-list {
+      display: grid;
+      gap: 8px;
+      max-height: 390px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .systems-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .clue-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .clue-card {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .clue-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 1000;
+      text-transform: uppercase;
+    }
+
+    .clue-card strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .headline {
+      padding: 10px;
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .build-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .build-btn {
+      min-height: 34px;
+      padding: 6px;
+      font-size: 0.72rem;
+      font-weight: 1000;
+    }
+
+    .shop-item, .city-card, .feed-item, .achievement {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .shop-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .shop-item strong, .city-card strong, .achievement strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .shop-item p, .city-card p, .feed-item p, .achievement p {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.42;
+    }
+
+    .buy-btn {
+      min-width: 92px;
+      min-height: 40px;
+      padding: 8px 9px;
+      font-weight: 1000;
+    }
+
+    .buy-btn.owned {
+      color: var(--green);
+      background: rgba(60, 255, 177, 0.1);
+      border-color: rgba(60, 255, 177, 0.28);
+      cursor: default;
+    }
+
+    .buy-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .city-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mini {
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 900;
+    }
+
+    .chart {
+      width: 100%;
+      height: 128px;
+      display: block;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .mini-map {
+      height: 130px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(25, 230, 255, 0.12), transparent 48%),
+        linear-gradient(135deg, rgba(25, 230, 255, 0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .mini-map::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 1px solid rgba(25, 230, 255, 0.18);
+      border-radius: 50%;
+    }
+
+    .notification-stack {
+      position: fixed;
+      z-index: 20;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      gap: 8px;
+      width: min(390px, calc(100% - 28px));
+    }
+
+    .toast {
+      padding: 12px;
+      background: rgba(4, 16, 29, 0.92);
+      border: 1px solid rgba(25, 230, 255, 0.22);
+      border-left: 4px solid var(--cyan);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      animation: toastIn 220ms ease;
+    }
+
+    .toast.danger { border-left-color: var(--red); }
+    .toast.good { border-left-color: var(--green); }
+    .toast.warn { border-left-color: var(--yellow); }
+
+    @keyframes toastIn {
+      from { transform: translateX(24px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      z-index: 30;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0, 8, 16, 0.74);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-backdrop.active { display: grid; }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: min(720px, calc(100vh - 36px));
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .science-diagram {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .diagram-card {
+      min-height: 110px;
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .diagram-wave {
+      position: absolute;
+      left: -20%;
+      right: -20%;
+      bottom: 16px;
+      height: 36px;
+      background: linear-gradient(90deg, transparent, rgba(25,230,255,0.65), transparent);
+      clip-path: polygon(0 60%, 12% 20%, 24% 60%, 36% 20%, 48% 60%, 60% 20%, 72% 60%, 84% 20%, 100% 60%, 100% 100%, 0 100%);
+      animation: waveMove 3s ease-in-out infinite;
+    }
+
+    .audio-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      accent-color: var(--cyan);
+      width: 120px;
+    }
+
+    .end-report {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1180px) {
+      .right { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .start-shell { grid-template-columns: 1fr; }
+      .cinematic-map { min-height: 420px; }
+    }
+
+    @media (max-width: 800px) {
+      .app { width: min(100% - 18px, 1480px); padding-top: 9px; }
+      .hud, .right, .top-hud, .command-strip { grid-template-columns: 1fr; }
+      .top-actions { justify-content: stretch; }
+      .top-actions button { flex: 1 1 120px; }
+      .stat-grid, .sensor-grid, .decision-grid, .science-diagram, .end-report, .systems-grid, .build-grid, .clue-grid { grid-template-columns: 1fr; }
+      .world-map { height: 430px; }
+      .risk-panel { grid-template-columns: 1fr; }
+      .risk-dial { margin: 0 auto; }
+      h1 { font-size: clamp(2.6rem, 16vw, 4.6rem); }
+    }
+  </style>
+</head>
+<body>
+  <div class="ocean-bg"></div>
+  <div class="clouds"></div>
+  <div class="rain"></div>
+  <div class="particles"></div>
+
+  <main id="app" class="app">
+    <section id="startScreen" class="screen active">
+      <div class="start-shell">
+        <div class="hero glass">
+          <span class="eyebrow">Coastal Disaster Prevention Agency</span>
+          <h1>Tsunami Warning Command</h1>
+          <p class="hero-copy">
+            Direct a tsunami early warning agency. Read earthquake and wave physics, interpret ocean sensor data,
+            send warnings, evacuate coastal cities, and protect people before tsunami waves arrive.
+          </p>
+          <p>
+            This is not about creating tsunamis. Your job is to understand wave speed, amplitude, frequency,
+            oscillations, and energy transfer well enough to reduce false alarms while keeping people safe.
+          </p>
+          <h3>Game Mode</h3>
+          <div id="modeButtons" class="mode-grid"></div>
+          <h3 style="margin-top:18px;">Difficulty</h3>
+          <div id="difficultyButtons" class="difficulty-grid"></div>
+          <div class="start-actions">
+            <button id="newGameBtn" class="primary">Launch Command Center</button>
+            <button id="continueBtn" class="blue-btn">Continue Saved Agency</button>
+            <button id="resetSaveBtn" class="red-btn">Delete Save</button>
+          </div>
+        </div>
+        <div class="cinematic-map glass" aria-hidden="true">
+          <div class="globe">
+            <div class="coast-line"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="hud">
+        <header class="top-hud glass">
+          <div class="brand-row">
+            <div class="brand-title">Tsunami Warning Command</div>
+            <div id="yearPill" class="year-pill">Year 1</div>
+            <div id="clockPill" class="year-pill">Jan 1 06:00</div>
+            <div id="modePill" class="mode-pill">Story Mode</div>
+            <div id="weatherPill" class="mode-pill">Weather: Calm</div>
+          </div>
+          <div class="top-actions">
+            <button id="nextEventBtn" class="icon-btn primary" title="Scan sensors for earthquake activity and possible tsunami warning signs.">Scan Ocean</button>
+            <button id="pauseBtn" class="icon-btn speed-btn">Pause</button>
+            <button class="icon-btn speed-btn active" data-speed="1">1x</button>
+            <button class="icon-btn speed-btn" data-speed="2">2x</button>
+            <button class="icon-btn speed-btn" data-speed="5">5x</button>
+            <button id="scienceBtn" class="icon-btn">Science Lab</button>
+            <button id="saveBtn" class="icon-btn">Save</button>
+            <button id="fullscreenBtn" class="icon-btn">Fullscreen</button>
+            <button id="menuBtn" class="icon-btn">Menu</button>
+          </div>
+        </header>
+
+        <aside class="side">
+          <section class="panel glass">
+            <div class="panel-head"><h2>Agency Economy</h2></div>
+            <div class="stat-grid">
+              <div class="stat"><span>Budget</span><strong id="budgetText">$0M</strong></div>
+              <div class="stat"><span>Emergency Fund</span><strong id="fundText">$0M</strong></div>
+              <div class="stat"><span>Tourism</span><strong id="tourismText">0%</strong></div>
+              <div class="stat"><span>Fishing</span><strong id="fishingText">0%</strong></div>
+              <div class="stat"><span>Inflation</span><strong id="inflationText">0%</strong></div>
+              <div class="stat"><span>Research</span><strong id="researchText">$0M</strong></div>
+              <div class="stat"><span>Rank</span><strong id="rankText">Intern</strong></div>
+              <div class="stat"><span>Region</span><strong id="regionText">Japan</strong></div>
+            </div>
+            <div class="meter"><div class="meter-label"><span>Public Trust</span><span id="trustText">0</span></div><div class="bar"><span id="trustBar"></span></div></div>
+            <div class="meter"><div class="meter-label"><span>Environment</span><span id="environmentText">0</span></div><div class="bar"><span id="environmentBar"></span></div></div>
+            <div class="meter"><div class="meter-label"><span>Government Support</span><span id="supportText">0</span></div><div class="bar"><span id="supportBar"></span></div></div>
+          </section>
+
+          <section class="panel glass">
+            <div class="panel-head"><h2>Live Feed</h2></div>
+            <div id="eventFeed" class="event-feed"></div>
+          </section>
+
+          <section class="panel glass">
+            <div class="panel-head"><h2>Human Systems</h2></div>
+            <div class="systems-grid">
+              <div class="stat"><span>Panic</span><strong id="panicText">0%</strong></div>
+              <div class="stat"><span>Traffic</span><strong id="trafficText">0%</strong></div>
+              <div class="stat"><span>Power Grid</span><strong id="powerText">0%</strong></div>
+              <div class="stat"><span>Election</span><strong id="electionText">0%</strong></div>
+            </div>
+            <div id="mediaHeadline" class="headline">Media channels are monitoring your first decision.</div>
+            <div id="socialFeed" class="headline">Social feed quiet. No rumors trending.</div>
+          </section>
+
+          <section class="panel glass">
+            <div class="panel-head"><h2>Audio</h2></div>
+            <div class="audio-row">
+              <button id="muteBtn" class="icon-btn">Muted</button>
+              <input id="volumeSlider" type="range" min="0" max="100" value="38" aria-label="Volume">
+            </div>
+          </section>
+        </aside>
+
+        <section class="main">
+          <section class="panel glass">
+            <div class="command-strip">
+              <div class="command-tile" title="Available agency money for upgrades, response, and rebuilding."><span>Money</span><strong id="quickMoneyText">$0M</strong></div>
+              <div class="command-tile safe" title="Public trust controls whether citizens obey warnings."><span>Trust</span><strong id="quickTrustText">0%</strong></div>
+              <div class="command-tile" title="Total population across all coastal cities."><span>Population</span><strong id="quickPopulationText">0</strong></div>
+              <div id="quickThreatTile" class="command-tile warn" title="Read the physics pattern: amplitude, speed, energy, oscillations, depth, and arrival time."><span>Sensor Pattern</span><strong id="quickThreatText">Idle</strong></div>
+              <div class="command-tile tech" title="Your current command rank based on performance."><span>Rank</span><strong id="quickRankText">Intern</strong></div>
+            </div>
+            <div id="nextStepText" class="next-step">Scan the ocean to begin. Read amplitude, speed, energy transfer, oscillations, and arrival time.</div>
+            <div id="missionText" class="mission-line">Mission: survive 5 years and keep public trust above 70%.</div>
+          </section>
+
+          <section class="map-panel glass">
+            <div id="worldMap" class="world-map"></div>
+          </section>
+
+          <section class="panel glass">
+            <div class="tabs" id="tabs"></div>
+            <div id="tab-dashboard" class="tab-content active">
+              <div class="risk-panel">
+                <div id="riskDial" class="risk-dial" style="--risk: 0deg;"><span id="riskText">IDLE</span></div>
+                <div>
+                  <h2 id="crisisTitle">Awaiting Ocean Data</h2>
+                  <p id="crisisSummary">Scan the ocean to receive randomized earthquake, ocean, weather, and sensor information.</p>
+                  <canvas id="waveChart" class="chart" width="720" height="128" aria-label="Animated wave chart"></canvas>
+                </div>
+              </div>
+              <div id="sensorGrid" class="sensor-grid" style="margin-top:10px;"></div>
+              <div id="decisionArea" class="decision-grid hidden">
+                <button id="warnBtn" class="red-btn" title="Use when wave physics suggests a serious tsunami threat.">Issue Warning <small>Costs money, protects lives</small></button>
+                <button id="waitBtn" class="blue-btn" title="Use when readings are uncertain and arrival time allows more analysis.">Wait for More Data <small>Improves confidence, loses time</small></button>
+                <button id="ignoreBtn" title="Use only when wave height, energy, and oscillation are low.">Stand Down <small>Cheap, risky if threat is real</small></button>
+              </div>
+              <div id="resultBox"></div>
+            </div>
+
+            <div id="tab-sensors" class="tab-content">
+              <div id="sensorGridDetail" class="sensor-grid"></div>
+            </div>
+
+            <div id="tab-cities" class="tab-content">
+              <div id="cityList" class="city-list"></div>
+            </div>
+
+            <div id="tab-economy" class="tab-content">
+              <div class="stat-grid">
+                <div class="stat" title="Money available for upgrades and emergency action."><span>Budget</span><strong id="economyBudgetText">$0M</strong></div>
+                <div class="stat" title="Reserved money for warning response, evacuation, and recovery."><span>Emergency Fund</span><strong id="economyFundText">$0M</strong></div>
+                <div class="stat" title="Tourism income falls after false alarms and coastal damage."><span>Tourism</span><strong id="economyTourismText">0%</strong></div>
+                <div class="stat" title="Fishing income depends on ocean health."><span>Fishing</span><strong id="economyFishingText">0%</strong></div>
+                <div class="stat" title="Inflation increases upkeep and upgrade costs."><span>Inflation</span><strong id="economyInflationText">0%</strong></div>
+                <div class="stat" title="Election support affects future government funding."><span>Election Support</span><strong id="economyElectionText">0%</strong></div>
+              </div>
+            </div>
+
+            <div id="tab-shop" class="tab-content">
+              <div class="tabs" id="shopTabs"></div>
+              <div id="shopList" class="shop-list"></div>
+            </div>
+
+            <div id="tab-research" class="tab-content">
+              <div class="stat-grid">
+                <div class="stat"><span>Prediction Accuracy</span><strong id="accuracyText">0%</strong></div>
+                <div class="stat"><span>Sensor Coverage</span><strong id="coverageText">0%</strong></div>
+                <div class="stat"><span>Evacuation Power</span><strong id="evacPowerText">0%</strong></div>
+                <div class="stat"><span>Infrastructure Defense</span><strong id="defenseText">0%</strong></div>
+                <div class="stat"><span>AI Prediction Center</span><strong id="aiLevelText">Level 1</strong></div>
+                <div class="stat"><span>Sea Level</span><strong id="seaLevelText">+0.00m</strong></div>
+              </div>
+              <div class="systems-grid" style="margin-top:10px;">
+                <button id="aiUpgradeBtn" class="blue-btn">Upgrade AI Center</button>
+                <button id="aidBtn" class="blue-btn">Request International Aid</button>
+              </div>
+              <p style="margin-top:12px;">Research upgrades improve wave-speed prediction, amplitude interpretation, oscillation modeling, and energy-transfer estimates. Better science reduces false alarms and increases public trust.</p>
+            </div>
+
+            <div id="tab-reports" class="tab-content">
+              <div class="stat-grid">
+                <div class="stat"><span>Lives Saved</span><strong id="reportLivesText">0</strong></div>
+                <div class="stat"><span>Casualties</span><strong id="reportCasualtiesText">0</strong></div>
+                <div class="stat"><span>False Alarms</span><strong id="reportFalseText">0</strong></div>
+                <div class="stat"><span>Damage</span><strong id="reportDamageText">$0M</strong></div>
+                <div class="stat"><span>Correct Calls</span><strong id="reportCorrectText">0</strong></div>
+                <div class="stat"><span>Score</span><strong id="reportScoreText">0</strong></div>
+              </div>
+              <div id="reportMediaText" class="headline">Media channels are monitoring your first decision.</div>
+              <div id="reportSocialText" class="headline">Social feed quiet.</div>
+              <div id="reportFeed" class="event-feed" style="margin-top:8px;"></div>
+            </div>
+          </section>
+        </section>
+
+        <aside class="right">
+          <section class="panel glass">
+            <div class="panel-head"><h2>Command Stats</h2></div>
+            <div class="stat-grid">
+              <div class="stat"><span>Lives Saved</span><strong id="livesSavedText">0</strong></div>
+              <div class="stat"><span>Casualties</span><strong id="casualtiesText">0</strong></div>
+              <div class="stat"><span>False Alarms</span><strong id="falseAlarmText">0</strong></div>
+              <div class="stat"><span>Damage</span><strong id="damageText">$0M</strong></div>
+              <div class="stat"><span>Correct Calls</span><strong id="correctText">0</strong></div>
+              <div class="stat"><span>Score</span><strong id="scoreText">0</strong></div>
+            </div>
+          </section>
+
+          <section class="panel glass">
+            <div class="panel-head"><h2>Minimap</h2></div>
+            <div id="miniMap" class="mini-map"></div>
+          </section>
+
+          <section class="panel glass">
+            <div class="panel-head"><h2>Achievements</h2></div>
+            <div id="achievementList" class="achievement-list"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div id="notifications" class="notification-stack"></div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal glass">
+      <div class="panel-head">
+        <h2 id="modalTitle">Science Lab</h2>
+        <button id="closeModalBtn" class="icon-btn">Close</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    const SAVE_KEY = "tsunami-warning-command-save-v1";
+    const modes = {
+      story: "Story Mode",
+      endless: "Endless Survival",
+      sandbox: "Sandbox Mode",
+      hardcore: "Hardcore Realism",
+      timed: "Timed Warning Mode"
+    };
+    const regions = ["Japan", "Greece", "Indonesia", "California", "Chile"];
+    const rankLevels = [
+      ["Intern", 0],
+      ["Analyst", 350],
+      ["Director", 900],
+      ["Chief Scientist", 1700],
+      ["Global Warning Commander", 3000]
+    ];
+    const difficulties = {
+      easy: { name: "Easy", budget: 520, risk: 0.78, cost: 0.82, warning: 1.25 },
+      normal: { name: "Normal", budget: 420, risk: 1, cost: 1, warning: 1 },
+      hard: { name: "Hard", budget: 330, risk: 1.22, cost: 1.22, warning: 0.82 },
+      hardcore: { name: "Hardcore", budget: 260, risk: 1.45, cost: 1.42, warning: 0.68 }
+    };
+
+    const tabs = [
+      ["dashboard", "Overview"],
+      ["sensors", "Sensors"],
+      ["cities", "Cities"],
+      ["economy", "Economy"],
+      ["shop", "Defense"],
+      ["research", "Research"],
+      ["reports", "Reports"]
+    ];
+
+    const shopCategories = {
+      sensors: "Sensor Technology",
+      protection: "City Protection",
+      research: "Scientific Research",
+      response: "Emergency Response",
+      public: "Public Systems"
+    };
+
+    const buildingTypes = {
+      shelter: { name: "Shelter", cost: 34, effect: { evac: 5, trust: 1, happiness: 3, safety: 4 } },
+      siren: { name: "Siren", cost: 22, effect: { evac: 3, panic: -2, happiness: 1, safety: 2 } },
+      sensorTower: { name: "Sensor Tower", cost: 42, effect: { coverage: 4, accuracy: 1, safety: 3 } },
+      hospital: { name: "Hospital", cost: 58, effect: { evac: 2, casualties: -0.08, happiness: 4, safety: 5 } },
+      lab: { name: "Research Lab", cost: 64, effect: { accuracy: 3, research: 4, happiness: 1, safety: 2 } },
+      seawall: { name: "Seawall", cost: 76, effect: { defense: 6, environment: -1, happiness: 2, safety: 7 } },
+      generator: { name: "Generator", cost: 46, effect: { power: 8, happiness: 2, safety: 3 } },
+      powerStation: { name: "Power Station", cost: 92, effect: { power: 16, support: 1, happiness: 3, safety: 5 } }
+    };
+
+    const disasterProfiles = {
+      quake: { label: "Underwater Earthquake Alert", threatBias: 0, amp: 1, energy: 1, ash: false },
+      mega: { label: "Major Tsunami Warning Event", threatBias: 24, amp: 2.25, energy: 1.8, ash: false },
+      volcano: { label: "Seafloor Volcanic Disturbance", threatBias: 15, amp: 1.35, energy: 1.32, ash: true },
+      aftershock: { label: "Aftershock Monitoring Alert", threatBias: 10, amp: 1.12, energy: 1.16, ash: false },
+      rogue: { label: "Unusual Wave Sensor Alert", threatBias: -8, amp: 1.8, energy: 1.05, ash: false },
+      landslide: { label: "Underwater Landslide Alert", threatBias: 13, amp: 1.55, energy: 1.24, ash: false }
+    };
+
+    const upgrades = [
+      ["basicBuoy", "sensors", "Basic Buoy Array", 38, "Adds near-shore detection coverage.", { coverage: 6, accuracy: 2 }],
+      ["deepSea", "sensors", "Deep Sea Pressure Sensor", 72, "Detects water-column pressure before waves reach shore.", { coverage: 10, accuracy: 5, warning: 3 }],
+      ["aiSensor", "sensors", "AI Sensor Fusion", 118, "Combines noisy signals and flags dangerous patterns.", { accuracy: 10, coverage: 4 }],
+      ["satellite", "sensors", "Satellite Monitoring", 165, "Tracks sea-level anomalies across the ocean.", { coverage: 16, accuracy: 8, warning: 4 }],
+      ["sonar", "sensors", "Sonar Systems", 92, "Maps seafloor motion and underwater landslides.", { coverage: 8, accuracy: 6 }],
+      ["seismic", "sensors", "Seismic Scanner Network", 104, "Improves earthquake magnitude and epicenter estimates.", { accuracy: 9, warning: 2 }],
+      ["drones", "sensors", "Underwater Drones", 130, "Mobile inspections reduce sensor failure risk.", { coverage: 9, accuracy: 7, environment: 2 }],
+      ["seawalls", "protection", "Seawalls", 135, "Reduces coastal damage from moderate surges.", { defense: 12 }],
+      ["barriers", "protection", "Flood Barriers", 155, "Protects harbors and low streets.", { defense: 14, environment: -2 }],
+      ["shelters", "protection", "Evacuation Shelters", 96, "Keeps evacuees safe after warnings.", { evac: 9, trust: 3 }],
+      ["gates", "protection", "Tsunami Gates", 210, "Massive gates protect dense city districts.", { defense: 20, evac: 3 }],
+      ["reinforced", "protection", "Reinforced Buildings", 148, "Reduces rebuilding costs and casualties.", { defense: 13 }],
+      ["sirens", "protection", "Emergency Sirens", 68, "Warnings reach people without phones.", { evac: 8, trust: 2 }],
+      ["highways", "protection", "Escape Highways", 122, "Moves people inland faster.", { evac: 13 }],
+      ["predictionAi", "research", "Faster Prediction AI", 110, "Cuts analysis time during warning events.", { accuracy: 12, warning: 3 }],
+      ["waveAnalysis", "research", "Improved Wave Analysis", 85, "Better connects amplitude and energy transfer.", { accuracy: 9 }],
+      ["oscillation", "research", "Oscillation Modeling", 94, "Interprets repeated up-and-down motion in sensor data.", { accuracy: 8, coverage: 2 }],
+      ["quantum", "research", "Quantum Simulations", 245, "Experimental high-speed tsunami scenario engine.", { accuracy: 18, warning: 5 }],
+      ["energyModel", "research", "Energy Prediction Systems", 132, "Estimates destructive energy more reliably.", { accuracy: 11, defense: 2 }],
+      ["helicopters", "response", "Rescue Helicopters", 126, "Rapid response for isolated neighborhoods.", { evac: 8, trust: 2 }],
+      ["boats", "response", "Rescue Boats", 76, "Post-impact rescue and harbor evacuation.", { evac: 5, fishing: 2 }],
+      ["medical", "response", "Medical Teams", 88, "Reduces casualties after impact.", { evac: 6, trust: 3 }],
+      ["towers", "response", "Communication Towers", 92, "Reduces blackout damage and warning failure.", { evac: 7, accuracy: 2 }],
+      ["vehicles", "response", "Emergency Vehicles", 82, "Improves evacuation and recovery logistics.", { evac: 6 }],
+      ["education", "public", "Education Campaigns", 46, "Citizens understand warnings and wave science.", { trust: 6, evac: 4 }],
+      ["training", "public", "Evacuation Training", 58, "People move faster and panic less.", { evac: 7, trust: 3 }],
+      ["drills", "public", "School Drills", 42, "Protects children and improves family readiness.", { trust: 4, evac: 4 }],
+      ["apps", "public", "Emergency Apps", 74, "Push notifications, routes, and live maps.", { evac: 8, trust: 2 }],
+      ["trustCampaign", "public", "Trust Campaigns", 54, "Repairs trust after false alarms or taxes.", { trust: 9 }]
+    ].map(([id, category, name, cost, description, effect]) => ({ id, category, name, cost, description, effect }));
+
+    const randomEvents = [
+      { name: "Sensor Failure", type: "bad", text: "A buoy cluster reports corrupted pressure data.", effect: s => { s.accuracy -= 5; s.coverage -= 4; } },
+      { name: "Aftershock Swarm", type: "danger", text: "Aftershocks complicate the risk model.", effect: s => { s.pendingRiskBoost += 9; } },
+      { name: "Communication Blackout", type: "bad", text: "Coastal radio towers are unstable.", effect: s => { s.evacPower -= 5; s.trust -= 3; } },
+      { name: "Power Outage", type: "bad", text: "Backup generators activate across shelters.", effect: s => { s.budget -= 12; s.evacPower -= 3; } },
+      { name: "Volcanic Eruption", type: "danger", text: "A submarine volcano adds landslide risk.", effect: s => { s.pendingRiskBoost += 12; } },
+      { name: "Underwater Landslide", type: "danger", text: "Sediment collapse may amplify wave height.", effect: s => { s.pendingRiskBoost += 15; } },
+      { name: "Political Pressure", type: "warn", text: "Officials demand fewer evacuations before tourist season.", effect: s => { s.trust -= 2; s.support -= 5; } },
+      { name: "Public Panic", type: "warn", text: "Rumors spread online before verified data arrives.", effect: s => { s.trust -= 4; } },
+      { name: "Communication Interference", type: "bad", text: "Warning dashboards receive delayed network data.", effect: s => { s.accuracy -= 4; s.budget -= 10; } },
+      { name: "Funding Cut", type: "bad", text: "Legislators freeze part of next year's grant.", effect: s => { s.support -= 8; s.budget -= 18; } },
+      { name: "Scientific Grant", type: "good", text: "A university funds ocean modeling research.", effect: s => { s.budget += 28; s.researchFunds += 14; } },
+      { name: "Citizen Praise", type: "good", text: "Residents praise clear evacuation guidance.", effect: s => { s.trust += 7; s.support += 5; } }
+    ];
+
+    const achievements = [
+      { id: "zeroCasualties", name: "Zero Casualties", desc: "Complete 8 years with no casualties.", check: s => s.year > 8 && s.casualties === 0 },
+      { id: "oceanGuardian", name: "Ocean Guardian", desc: "Keep environment above 85.", check: s => s.environment >= 85 && s.year >= 5 },
+      { id: "masterScientist", name: "Master Scientist", desc: "Reach 90% prediction accuracy.", check: s => s.accuracy >= 90 },
+      { id: "evacLegend", name: "Evacuation Legend", desc: "Save 100,000 people.", check: s => s.livesSaved >= 100000 },
+      { id: "perfectPrediction", name: "Perfect Prediction", desc: "Make 6 correct calls.", check: s => s.correctCalls >= 6 },
+      { id: "megaProtector", name: "Mega City Protector", desc: "Survive a mega tsunami.", check: s => s.megaSurvived },
+      { id: "noFalseAlarms", name: "No False Alarms", desc: "Make 5 safe calls without a false alarm.", check: s => s.noFalseAlarmRun >= 5 },
+      { id: "billionSaver", name: "Billion Dollar Saver", desc: "Prevent massive damage through strong defenses.", check: s => s.damage < 1000 && s.year > 10 },
+      { id: "aiCommander", name: "Perfect Forecast", desc: "Upgrade the AI Prediction Center to Level 5.", check: s => s.aiLevel >= 5 }
+    ];
+
+    const cityTemplates = [
+      ["Harborview", 82000, 72, 68, 62, 44, 42, 45, 25, 54],
+      ["Coral Point", 41000, 84, 78, 74, 56, 58, 68, 63, 63],
+      ["Seabright", 126000, 66, 61, 58, 39, 36, 30, 19, 38],
+      ["Marina Delta", 67000, 76, 71, 64, 47, 48, 78, 72, 49],
+      ["Blue Cape", 52000, 81, 75, 70, 52, 55, 23, 70, 56]
+    ];
+
+    const state = {};
+    let selectedMode = "story";
+    let selectedDifficulty = "normal";
+    let selectedShopCategory = "sensors";
+    let currentCrisis = null;
+    let chartPhase = 0;
+    let audio = null;
+    let gameLoopTimer = null;
+    let nextIncidentAt = 0;
+    let feedPulseAt = 0;
+
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => Array.from(document.querySelectorAll(selector));
+
+    function rand(min, max) {
+      const cryptoArray = new Uint32Array(1);
+      crypto.getRandomValues(cryptoArray);
+      const n = (cryptoArray[0] / 4294967295 + Math.random()) / 2;
+      return min + n * (max - min);
+    }
+
+    function pick(list) {
+      return list[Math.floor(rand(0, list.length))];
+    }
+
+    function clamp(value, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function money(value) {
+      return "$" + Math.round(value).toLocaleString() + "M";
+    }
+
+    function createNewState() {
+      const diff = difficulties[selectedDifficulty];
+      Object.assign(state, {
+        mode: selectedMode,
+        difficulty: selectedDifficulty,
+        year: 1,
+        month: 1,
+        day: 1,
+        hour: 6,
+        speed: 1,
+        paused: false,
+        lastTick: Date.now(),
+        nextIncidentIn: 0,
+        maxYears: selectedMode === "timed" ? 5 : 12,
+        budget: diff.budget,
+        emergencyFund: 90,
+        tourism: 78,
+        fishing: 74,
+        inflation: rand(2.1, 5.2),
+        researchFunds: 35,
+        trust: 72,
+        environment: 82,
+        support: 70,
+        panic: 12,
+        traffic: 18,
+        powerGrid: 86,
+        electionSupport: 68,
+        climate: 0,
+        seaLevel: 0.08,
+        pollution: 4,
+        marineLife: 88,
+        aiLevel: 1,
+        region: regions[0],
+        mediaHeadline: "Media channels are monitoring your first decision.",
+        socialFeed: "Social feed quiet. No rumors trending.",
+        tutorialShown: false,
+        activeMission: 0,
+        missions: [
+          { name: "Survive 5 years", done: false },
+          { name: "Save 1 million citizens", done: false },
+          { name: "Keep trust above 70%", done: false },
+          { name: "Avoid 3 false alarms", done: false },
+          { name: "Protect all cities during a mega tsunami", done: false }
+        ],
+        accuracy: 46,
+        coverage: 38,
+        evacPower: 42,
+        defense: 28,
+        warningBonus: 0,
+        pendingRiskBoost: 0,
+        livesSaved: 0,
+        casualties: 0,
+        falseAlarms: 0,
+        damage: 0,
+        correctCalls: 0,
+        score: 0,
+        noFalseAlarmRun: 0,
+        billionSaved: 0,
+        megaSurvived: false,
+        owned: [],
+        unlockedAchievements: [],
+        feed: [],
+        weather: makeWeather(),
+        cities: cityTemplates.map(([name, population, economy, happiness, trust, risk, evac, x, y, infra]) => ({
+          name, population, economy, happiness, trust, risk, evac, x, y, infra, status: "Stable", traffic: rand(12, 34), power: rand(74, 96), buildings: {}
+        }))
+      });
+      if (state.mode === "sandbox") {
+        state.budget = 1200;
+        state.emergencyFund = 260;
+      }
+      addFeed("Agency founded", "Command center online. Sensor network awaiting the first ocean scan.", "good");
+    }
+
+    function renderStartOptions() {
+      $("#modeButtons").innerHTML = Object.entries(modes).map(([id, name]) => `<button class="mode-btn ${id === selectedMode ? "active" : ""}" data-mode="${id}">${name}</button>`).join("");
+      $("#difficultyButtons").innerHTML = Object.entries(difficulties).map(([id, d]) => `<button class="difficulty-btn ${id === selectedDifficulty ? "active" : ""}" data-difficulty="${id}">${d.name}</button>`).join("");
+      $$(".mode-btn").forEach(btn => btn.addEventListener("click", () => { selectedMode = btn.dataset.mode; renderStartOptions(); }));
+      $$(".difficulty-btn").forEach(btn => btn.addEventListener("click", () => { selectedDifficulty = btn.dataset.difficulty; renderStartOptions(); }));
+      $("#continueBtn").disabled = !localStorage.getItem(SAVE_KEY);
+    }
+
+    function makeWeather() {
+      const roll = rand(0, 100);
+      if (roll > 88) return { name: "Hurricane", accuracy: -12, evac: -16, wave: 14, storm: true, temp: rand(28, 31), sea: rand(0.32, 0.62) };
+      if (roll > 68) return { name: "Storm", accuracy: -8, evac: -8, wave: 8, storm: true, temp: rand(24, 29), sea: rand(0.2, 0.5) };
+      if (roll > 42) return { name: "Rough Seas", accuracy: -4, evac: -3, wave: 4, storm: false, temp: rand(20, 27), sea: rand(0.1, 0.35) };
+      return { name: "Calm", accuracy: 2, evac: 2, wave: 0, storm: false, temp: rand(18, 26), sea: rand(0.04, 0.22) };
+    }
+
+    function chooseDisasterType() {
+      const yearPressure = Math.min(22, state.year * 1.7);
+      const roll = rand(0, 100) + yearPressure + state.climate * 0.35;
+      if (state.mode === "sandbox" && roll > 55) return pick(["mega", "volcano", "rogue", "landslide", "aftershock"]);
+      if (state.year > 6 && roll > 116) return "mega";
+      if (roll > 101) return "volcano";
+      if (roll > 91) return "landslide";
+      if (roll > 80) return "aftershock";
+      if (roll > 68) return "rogue";
+      return "quake";
+    }
+
+    function makeWaveArrivals(firstArrival, amplitude, energy, mega, disasterType) {
+      const count = mega ? Math.round(rand(3, 5)) : disasterType === "volcano" || disasterType === "landslide" ? Math.round(rand(2, 4)) : Math.round(rand(1, 3));
+      const arrivals = [];
+      let t = firstArrival;
+      for (let i = 0; i < count; i++) {
+        const nearshoreGrowth = i === 0 ? rand(0.85, 1.2) : rand(0.75, 1.45);
+        arrivals.push({
+          minutes: Math.max(1, t),
+          height: Math.max(0.2, amplitude * nearshoreGrowth + energy * rand(0.004, 0.018)),
+          note: i === 0 ? "first wave" : i === 1 ? "second wave" : `wave ${i + 1}`
+        });
+        t += rand(9, 28) + amplitude * rand(0.6, 2.2);
+      }
+      return arrivals;
+    }
+
+    function formatArrivalWindow(c) {
+      if (!c) return "No active wave train";
+      const first = c.arrivals?.[0]?.minutes ?? c.warningTime;
+      const last = c.arrivals?.[c.arrivals.length - 1]?.minutes ?? c.warningTime;
+      if (!c.arrivals || c.arrivals.length === 1) return `first wave ~${Math.round(first)} min`;
+      return `first wave ~${Math.round(first)} min; later waves until ~${Math.round(last)} min`;
+    }
+
+    function formatWaveTrain(c) {
+      if (!c || !c.arrivals) return "Wave train unknown";
+      return c.arrivals.map(w => `${w.note}: ${Math.round(w.minutes)} min / ${w.height.toFixed(1)} m`).join(" | ");
+    }
+
+    function generateCrisis() {
+      if (currentCrisis) {
+        toast("Resolve the active warning event first.", "warn");
+        return;
+      }
+      scheduleNextIncident();
+      if (state.year > state.maxYears && state.mode !== "endless" && state.mode !== "sandbox") {
+        showEndReport();
+        return;
+      }
+
+      state.weather = makeWeather();
+      const diff = difficulties[state.difficulty];
+      const eventRoll = rand(0, 100);
+      const event = eventRoll > 72 ? pick(randomEvents) : null;
+      if (event) {
+        event.effect(state);
+        addFeed(event.name, event.text, event.type);
+        toast(event.name + ": " + event.text, event.type === "danger" ? "danger" : event.type);
+      }
+
+      const disasterType = chooseDisasterType();
+      const profile = disasterProfiles[disasterType];
+      const mega = disasterType === "mega";
+      const signalRoll = rand(0, 100) + state.year * 0.7 + (state.difficulty === "hard" || state.difficulty === "hardcore" ? 8 : 0);
+      const signalCase = mega ? "severe" : signalRoll > 76 ? "severe" : signalRoll > 44 ? "uncertain" : "minor";
+      const magnitude = signalCase === "minor"
+        ? rand(5.2, 6.8)
+        : signalCase === "uncertain"
+          ? rand(6.4, 7.7)
+          : disasterType === "rogue" ? rand(6.2, 7.4) : mega ? rand(8.8, 9.6) : disasterType === "volcano" ? rand(7.2, 8.4) : rand(7.6, 9.0 + state.year * 0.02);
+      const depth = rand(1800, 7600);
+      const distance = rand(18, 820);
+      const direction = pick(["NW", "N", "NE", "E", "SE", "S", "SW", "W"]);
+      const plateFactor = rand(0.72, 1.34);
+      const speed = Math.sqrt(9.81 * depth) * 3.6;
+      const amplitudeBase = Math.max(0.15, (magnitude - 6) * rand(0.42, 1.12) * plateFactor * profile.amp + state.weather.wave / 16 + state.seaLevel * 1.4);
+      const amplitude = mega
+        ? rand(8.5, 16.8)
+        : signalCase === "minor"
+          ? rand(0.2, 1.25) + state.weather.wave / 22
+          : signalCase === "uncertain"
+            ? rand(1.1, 3.0) + state.weather.wave / 18
+            : disasterType === "rogue" ? rand(3.6, 8.5) : amplitudeBase;
+      const frequency = rand(0.018, 0.115) + (amplitude > 4 ? rand(0.004, 0.018) : 0);
+      const oscillation = clamp(amplitude * 10 + Math.max(0, magnitude - 5.5) * 8 + rand(-18, 18) + state.weather.wave);
+      const energy = clamp(((amplitude * amplitude * 4.6) + (speed / 35) + Math.max(0, magnitude - 6) * 11 + oscillation * 0.16 + state.pendingRiskBoost) * profile.energy);
+      const travelMinutes = distance / speed * 60;
+      const warningTime = Math.max(1, travelMinutes * diff.warning + state.warningBonus + state.aiLevel * 1.2);
+      const arrivals = makeWaveArrivals(warningTime, amplitude, energy, mega, disasterType);
+      const sensorNoise = Math.max(2, 36 - (state.accuracy + state.coverage) / 5 - state.weather.accuracy - state.aiLevel * 2.8);
+      const measuredRisk = clamp(energy * 0.5 + amplitude * 8 + Math.max(0, magnitude - 6) * 10 + oscillation * 0.24 + rand(-sensorNoise, sensorNoise));
+      const trueRisk = clamp(energy * 0.54 + amplitude * 8.5 + Math.max(0, magnitude - 6) * 11 + oscillation * 0.22 + state.weather.wave * 0.4 + profile.threatBias + state.climate * 0.25 + (signalCase === "minor" ? -24 : signalCase === "uncertain" ? -8 : 8));
+      const threat = signalCase === "severe" ? trueRisk >= 52 : signalCase === "uncertain" ? trueRisk >= 64 && rand(0, 100) > 48 : false;
+      const targetCity = pick(state.cities);
+      targetCity.status = "Evacuating";
+
+      currentCrisis = {
+        id: Date.now() + "-" + Math.floor(rand(1000, 9999)),
+        disasterType,
+        mega,
+        eventName: profile.label,
+        signalCase,
+        ash: profile.ash,
+        aftershockChance: disasterType === "aftershock" || rand(0, 100) > 78,
+        secondaryImpact: mega ? Math.round(rand(2, 4)) : disasterType === "volcano" ? Math.round(rand(1, 3)) : 1,
+        magnitude,
+        depth,
+        distance,
+        direction,
+        speed,
+        amplitude,
+        frequency,
+        oscillation,
+        energy,
+        warningTime,
+        arrivals,
+        measuredRisk,
+        trueRisk,
+        threat,
+        targetCity: targetCity.name,
+        affectedCities: [targetCity.name].concat(mega ? state.cities.filter(c => c.name !== targetCity.name).slice(0, Math.round(rand(1, 3))).map(c => c.name) : []),
+        possibleCasualties: Math.round(targetCity.population * trueRisk / 100 * rand(0.08, 0.24)),
+        economicImpact: Math.round((trueRisk * 2.6 + targetCity.economy) * (mega ? 2.2 : 1)),
+        x: clamp(targetCity.x + rand(-14, 14), 8, 92),
+        y: clamp(targetCity.y + rand(-18, 18), 8, 92),
+        cityX: targetCity.x,
+        cityY: targetCity.y
+      };
+      $("#resultBox").innerHTML = "";
+      state.pendingRiskBoost = 0;
+      bodyClass();
+      addFeed("Warning event detected", `${currentCrisis.eventName} detected near ${currentCrisis.targetCity}.`, threat ? "danger" : "warn");
+      playSound(threat ? "alarm" : "quake");
+      renderAll();
+      animateCrisisOnMap();
+      showCrisisPopup();
+      toast("Ocean scan found a warning event. Analyze the wave data.", threat ? "danger" : "warn");
+    }
+
+    function decision(action) {
+      if (!currentCrisis) return;
+      const c = currentCrisis;
+      const city = state.cities.find(item => item.name === c.targetCity);
+      const trafficPenalty = (state.traffic + city.traffic + state.panic * 0.55) / 4;
+      const powerPenalty = state.powerGrid < 55 || city.power < 55 ? 12 : 0;
+      const hospitalBonus = (city.buildings.hospital || 0) * 5;
+      const effectiveEvac = clamp((state.evacPower + city.evac + state.trust * 0.25 + state.weather.evac - trafficPenalty - powerPenalty) * (action === "warn" ? 1 : action === "wait" ? 0.62 : 0.08));
+      const effectiveDefense = clamp((state.defense + city.infra + (city.buildings.seawall || 0) * 9) * 0.55);
+      const confidence = clamp(state.accuracy + state.coverage * 0.35 + (action === "wait" ? 14 : 0) + state.weather.accuracy);
+      const pattern = signalBand(c).className;
+      const correct = (c.threat && action === "warn") || (!c.threat && action === "wait" && pattern === "warn") || (!c.threat && action === "ignore" && pattern === "safe");
+      const partial = (c.threat && action === "wait") || (!c.threat && action === "warn" && pattern === "warn") || (!c.threat && action === "wait" && pattern === "safe") || (!c.threat && action === "ignore" && pattern === "warn");
+      let resultType = correct ? "good" : partial ? "warn" : "bad";
+      let title = "";
+      let explanation = "";
+      let livesSaved = 0;
+      let casualties = 0;
+      let damage = 0;
+      let cost = 0;
+      let score = 0;
+
+      if (action === "warn" && c.threat) {
+        livesSaved = Math.round(city.population * (effectiveEvac / 100) * rand(0.62, 0.9));
+        casualties = Math.max(0, Math.round(city.population * (1 - effectiveEvac / 100) * (c.trueRisk / 100) * rand(0.04, 0.12) - hospitalBonus));
+        damage = Math.round((c.trueRisk * 2.2 + city.economy * 0.8) * (1 - effectiveDefense / 140));
+        cost = 28 + city.population / 9000 + c.trueRisk * 0.18;
+        title = "Warning Matched the Wave Evidence";
+        explanation = "High amplitude, fast wave speed, strong oscillations, and high estimated energy indicated a real tsunami. Warning early let citizens move before energy reached shore.";
+        score = 80 + livesSaved / 950 - casualties * 0.5;
+        state.trust += 7; state.support += 5; state.panic -= 7; state.environment -= c.trueRisk > 80 ? 3 : 1;
+        if (c.mega) state.megaSurvived = true;
+      } else if (action === "warn" && !c.threat) {
+        cost = 24 + city.population / 10000;
+        damage = Math.round(rand(0, 8));
+        state.falseAlarms += 1;
+        state.noFalseAlarmRun = 0;
+        state.trust += c.measuredRisk > 60 ? -5 : -12;
+        state.support += -4;
+        state.panic += 8;
+        state.tourism -= rand(2, 6);
+        state.fishing -= rand(1, 4);
+        title = c.measuredRisk > 60 ? "Noisy Readings Caused a False Alarm" : "Low Readings Did Not Support Warning";
+        explanation = c.measuredRisk > 60
+          ? "The system saw suspicious signals, so the warning was defensible. False alarms are a limitation of warning systems when data is uncertain."
+          : "The readings were low. Low amplitude and low energy usually mean the wave is less destructive, so evacuation costs hurt trust and the economy.";
+        score = c.measuredRisk > 60 ? 8 : -36;
+      } else if (action === "wait" && c.threat) {
+        livesSaved = Math.round(city.population * (effectiveEvac / 100) * rand(0.38, 0.68));
+        casualties = Math.max(0, Math.round(city.population * (1 - effectiveEvac / 100) * (c.trueRisk / 100) * rand(0.08, 0.18) - hospitalBonus * 0.6));
+        damage = Math.round((c.trueRisk * 3 + city.economy) * (1 - effectiveDefense / 150));
+        cost = 15 + damage * 0.12;
+        title = "Delayed Warning: Evidence Became Costly";
+        explanation = "Waiting improved reliability, but high wave speed reduced evacuation time. A tsunami transfers energy through the ocean quickly, so delay increased casualties and damage.";
+        score = -12 + livesSaved / 1200 - casualties * 0.9;
+        state.trust -= 5; state.support -= 5; state.panic += 10; state.environment -= 4;
+      } else if (action === "wait" && !c.threat) {
+        cost = 6;
+        title = "More Data Prevented Panic";
+        explanation = "Waiting allowed the agency to compare frequency, oscillations, and amplitude. The wave motion did not show enough energy transfer for a destructive tsunami.";
+        score = 44 + confidence * 0.2;
+        state.trust += 5; state.support += 3; state.noFalseAlarmRun += 1; state.panic -= 3;
+      } else if (action === "ignore" && c.threat) {
+        casualties = Math.max(0, Math.round(city.population * (c.trueRisk / 100) * rand(0.14, 0.32) - hospitalBonus * 0.3));
+        damage = Math.round((c.trueRisk * 4.5 + city.economy * 1.8) * (1 - effectiveDefense / 180));
+        cost = damage * 0.28 + casualties * 0.02;
+        title = "Severe Wave Evidence Was Missed";
+        explanation = "Tall amplitude, high energy, and strong oscillations were the key warning signs. The wave could damage the coast even though ocean water mainly oscillates while energy moves forward.";
+        score = -100 - casualties * 1.1;
+        state.trust -= 18; state.support -= 14; state.panic += 20; state.environment -= 9;
+      } else {
+        title = "Stand Down Matched Low Readings";
+        explanation = "The event was not a tsunami. Small amplitude, low frequency activity, and limited oscillations suggested low energy at the coast.";
+        score = 36;
+        state.trust += 3; state.support += 2; state.noFalseAlarmRun += 1; state.panic -= 2;
+      }
+
+      if (c.secondaryImpact > 1 && c.threat) {
+        const extraDamage = Math.round(damage * rand(0.18, 0.38) * (c.secondaryImpact - 1));
+        damage += extraDamage;
+        cost += extraDamage * 0.09;
+        state.panic += 7;
+        explanation += ` Multiple wave impacts struck the coast, adding ${money(extraDamage)} in secondary damage.`;
+      }
+
+      if (c.disasterType === "volcano") {
+        state.powerGrid -= rand(6, 14);
+        state.environment -= rand(4, 9);
+        explanation += " Seafloor volcanic disturbance data made the warning less reliable because pressure waves and ash disruption can confuse sensors.";
+      }
+
+      if (c.disasterType === "rogue") {
+        explanation += " This was an unusual wave sensor alert: dangerous local wave height without a classic tsunami source.";
+      }
+
+      const aftershock = c.aftershockChance && rand(0, 100) > (action === "warn" ? 58 : 42);
+      if (aftershock) {
+        const aftershockCost = action === "warn" ? 12 : 26;
+        cost += aftershockCost;
+        state.panic += action === "warn" ? 4 : 12;
+        state.trust += action === "warn" ? 2 : -5;
+        explanation += action === "warn"
+          ? " An aftershock occurred while evacuation was active; keeping people out cost money but avoided a worse rush back into danger."
+          : " An aftershock hit after the city relaxed; reopening too early increased panic and recovery costs.";
+      }
+
+      state.correctCalls += correct ? 1 : 0;
+      state.livesSaved += Math.max(0, livesSaved);
+      state.casualties += Math.max(0, casualties);
+      state.damage += Math.max(0, damage);
+      state.budget -= cost * difficulties[state.difficulty].cost;
+      state.emergencyFund -= Math.min(state.emergencyFund, damage * 0.08);
+      state.score += Math.round(score);
+      state.trust = clamp(state.trust);
+      state.support = clamp(state.support);
+      state.environment = clamp(state.environment);
+      state.panic = clamp(state.panic);
+      state.powerGrid = clamp(state.powerGrid - damage * 0.03 + (correct ? 1 : -2));
+      state.traffic = clamp(state.traffic + (action === "warn" ? 10 : action === "wait" ? 4 : -3));
+      state.pollution = clamp(state.pollution + damage * 0.035 + casualties * 0.0008);
+      state.marineLife = clamp(state.marineLife - state.pollution * 0.03 - (c.disasterType === "volcano" ? 5 : 0));
+      state.mediaHeadline = makeHeadline(correct, partial, c, action);
+      state.socialFeed = makeSocialPost(correct, c);
+      city.population = Math.max(8000, city.population - casualties);
+      city.economy = clamp(city.economy - damage * 0.05 + (correct ? 2 : -3));
+      city.happiness = clamp(city.happiness + (correct ? 4 : -8));
+      city.trust = clamp(city.trust + (correct ? 5 : -10));
+      city.traffic = clamp(city.traffic + (action === "warn" ? 14 : -4));
+      city.power = clamp(city.power - damage * 0.06 + (city.buildings.generator || 0) * 2 + (city.buildings.powerStation || 0) * 4);
+      city.status = correct ? "Protected" : partial ? "Rebuilding" : "Damaged";
+
+      state.year += 1;
+      yearlyEconomyTick(correct);
+      initTabs();
+      showDecisionResult({ title, explanation, resultType, correct, partial, livesSaved, casualties, damage, cost, score, action });
+      addFeed(title, explanation, resultType === "bad" ? "danger" : resultType);
+      checkAchievements();
+      currentCrisis = null;
+      scheduleNextIncident();
+      bodyClass();
+      renderAll();
+      saveGame(false);
+      if (state.budget < -120 || state.trust <= 4 || state.support <= 3) showEndReport();
+    }
+
+    function yearlyEconomyTick(success) {
+      const taxRevenue = state.cities.reduce((sum, c) => sum + c.population * c.economy / 100000, 0) * 0.6;
+      const tourismRevenue = state.tourism * 0.32;
+      const fishingRevenue = state.fishing * 0.24;
+      const maintenance = (28 + state.owned.length * 5.2) * (1 + state.inflation / 100);
+      const grant = success ? rand(8, 24) : rand(0, 8);
+      state.budget += taxRevenue + tourismRevenue + fishingRevenue + grant - maintenance;
+      state.researchFunds += success ? 5 : 1;
+      state.climate = clamp(state.climate + rand(0.4, 1.2), 0, 100);
+      state.seaLevel += rand(0.008, 0.024) + state.climate * 0.0003;
+      state.inflation = clamp(state.inflation + rand(-0.25, 0.65), 1.2, 12);
+      state.tourism = clamp(state.tourism + (success ? 2 : -4) - state.falseAlarms * 0.18);
+      state.fishing = clamp(state.fishing + (state.environment > 70 ? 1.5 : -3));
+      state.electionSupport = clamp(state.electionSupport + (success ? 3 : -7) + (state.trust - 50) * 0.04);
+      if (state.year % 4 === 0 && state.electionSupport < 42) {
+        const cut = rand(24, 58);
+        state.budget -= cut;
+        state.support -= 8;
+        addFeed("Election backlash", `Bad performance reduced next-year funding by ${money(cut)}.`, "bad");
+      }
+      state.region = regions[Math.min(regions.length - 1, Math.floor((state.year - 1) / 5))];
+      state.cities.forEach(c => {
+        c.population = Math.round(c.population * (1 + rand(0.002, 0.018) * (c.happiness / 100)));
+        c.risk = clamp(c.risk + state.weather.sea * 2 + state.seaLevel * 0.2 + rand(-2, 3));
+        c.traffic = clamp(c.traffic + c.population / 180000 + rand(-3, 4));
+        c.power = clamp(c.power + (c.buildings.generator || 0) * 0.4 + (c.buildings.powerStation || 0) * 0.8 - rand(0, 2.5));
+        if (c.status === "Better Protected" && rand(0, 100) > 70) c.status = "Stable";
+      });
+    }
+
+    function makeHeadline(correct, partial, crisis, action) {
+      if (correct && crisis.threat) return `NEWS: ${crisis.targetCity} credits agency warning for saving thousands.`;
+      if (correct) return "NEWS: Agency avoids panic with calm science-based decision.";
+      if (partial) return "NEWS: Experts split after costly but defensible tsunami decision.";
+      if (action === "warn") return "NEWS: Angry businesses criticize false alarm and evacuation losses.";
+      return `BREAKING: Missed ${crisis.eventName} sparks national inquiry.`;
+    }
+
+    function makeSocialPost(correct, crisis) {
+      if (state.falseAlarms > 2 && !correct) return "Trending: 'They always cry tsunami' posts are damaging warning compliance.";
+      if (state.panic > 70) return "Trending: Rumors and evacuation videos are accelerating public panic.";
+      if (correct) return `Trending: Residents share thank-you messages from ${crisis.targetCity}.`;
+      return "Trending: Conflicting posts spread misinformation about wave height and evacuation routes.";
+    }
+
+    function buyUpgrade(id) {
+      const upgrade = upgrades.find(u => u.id === id);
+      if (!upgrade || state.owned.includes(id)) return;
+      const price = upgrade.cost * difficulties[state.difficulty].cost;
+      if (state.budget < price) {
+        toast("Budget too low for " + upgrade.name + ".", "warn");
+        return;
+      }
+      state.budget -= price;
+      state.owned.push(id);
+      applyUpgrade(upgrade);
+      addFeed("Upgrade purchased", upgrade.name + " is now operational.", "good");
+      toast(upgrade.name + " installed.", "good");
+      checkAchievements();
+      renderAll();
+      saveGame(false);
+    }
+
+    function applyUpgrade(upgrade) {
+      const e = upgrade.effect;
+      state.coverage = clamp(state.coverage + (e.coverage || 0));
+      state.accuracy = clamp(state.accuracy + (e.accuracy || 0));
+      state.evacPower = clamp(state.evacPower + (e.evac || 0));
+      state.defense = clamp(state.defense + (e.defense || 0));
+      state.trust = clamp(state.trust + (e.trust || 0));
+      state.environment = clamp(state.environment + (e.environment || 0));
+      state.fishing = clamp(state.fishing + (e.fishing || 0));
+      state.warningBonus += e.warning || 0;
+      const happinessGain = upgrade.category === "public" ? 4 : upgrade.category === "protection" ? 3 : upgrade.category === "response" ? 2 : 1;
+      const safetyGain = (e.defense || 0) * 0.5 + (e.evac || 0) * 0.35 + (e.coverage || 0) * 0.2 + (e.accuracy || 0) * 0.15;
+      if (upgrade.id === "predictionAi") state.aiLevel = Math.max(state.aiLevel, 2);
+      if (upgrade.id === "quantum") state.aiLevel = Math.max(state.aiLevel, 4);
+      if (upgrade.id === "satellite") state.aiLevel = Math.max(state.aiLevel, 3);
+      if (e.defense) state.cities.forEach(c => c.infra = clamp(c.infra + e.defense * 0.25));
+      if (e.evac) state.cities.forEach(c => c.evac = clamp(c.evac + e.evac * 0.18));
+      state.cities.forEach(c => {
+        c.happiness = clamp(c.happiness + happinessGain);
+        c.infra = clamp(c.infra + safetyGain * 0.25);
+        c.status = "Better Protected";
+      });
+    }
+
+    function buildInCity(cityName, type) {
+      const city = state.cities.find(c => c.name === cityName);
+      const building = buildingTypes[type];
+      if (!city || !building) return;
+      const count = city.buildings[type] || 0;
+      const price = building.cost * (1 + count * 0.45) * difficulties[state.difficulty].cost;
+      if (state.budget < price) {
+        toast("Budget too low for " + building.name + ".", "warn");
+        return;
+      }
+      state.budget -= price;
+      city.buildings[type] = count + 1;
+      city.evac = clamp(city.evac + (building.effect.evac || 0));
+      city.trust = clamp(city.trust + (building.effect.trust || 0));
+      city.happiness = clamp(city.happiness + (building.effect.happiness || 0));
+      city.infra = clamp(city.infra + (building.effect.defense || 0) + (building.effect.safety || 0));
+      city.power = clamp(city.power + (building.effect.power || 0));
+      city.status = "Better Protected";
+      state.coverage = clamp(state.coverage + (building.effect.coverage || 0));
+      state.accuracy = clamp(state.accuracy + (building.effect.accuracy || 0));
+      state.defense = clamp(state.defense + (building.effect.defense || 0) * 0.35);
+      state.evacPower = clamp(state.evacPower + (building.effect.evac || 0) * 0.25);
+      state.panic = clamp(state.panic + (building.effect.panic || 0));
+      state.environment = clamp(state.environment + (building.effect.environment || 0));
+      state.trust = clamp(state.trust + (building.effect.trust || 0) * 0.4 + (building.effect.happiness || 0) * 0.2);
+      state.researchFunds += building.effect.research || 0;
+      addFeed("Protection installed", `${building.name} added to protect ${city.name}.`, "good");
+      toast(`${building.name} installed to protect ${city.name}.`, "good");
+      renderAll();
+      saveGame(false);
+    }
+
+    function upgradeAiCenter() {
+      const price = 80 + state.aiLevel * 70;
+      if (state.aiLevel >= 5) {
+        toast("AI Prediction Center already at Level 5.", "good");
+        return;
+      }
+      if (state.researchFunds < price) {
+        toast(`Need ${money(price)} research funding for the next AI level.`, "warn");
+        return;
+      }
+      state.researchFunds -= price;
+      state.aiLevel += 1;
+      state.accuracy = clamp(state.accuracy + 7);
+      state.warningBonus += 2;
+      addFeed("AI Prediction Center upgraded", `AI simulations reached Level ${state.aiLevel}.`, "good");
+      toast(`AI Prediction Center Level ${state.aiLevel} online.`, "good");
+      renderAll();
+      saveGame(false);
+    }
+
+    function requestAid() {
+      if (state.support < 25 && state.trust < 30) {
+        toast("International partners hesitate because trust and support are too low.", "warn");
+        return;
+      }
+      const aid = rand(42, 96);
+      state.budget += aid;
+      state.emergencyFund += aid * 0.35;
+      state.support -= 3;
+      addFeed("International aid", `Partner countries provided ${money(aid)} in recovery and rescue support.`, "good");
+      toast(`International aid received: ${money(aid)}.`, "good");
+      renderAll();
+      saveGame(false);
+    }
+
+    function renderAll() {
+      $("#yearPill").textContent = `Year ${state.year}`;
+      $("#clockPill").textContent = formatClock();
+      $("#modePill").textContent = `${modes[state.mode]} / ${difficulties[state.difficulty].name}`;
+      $("#weatherPill").textContent = `Weather: ${state.weather.name} | ${state.weather.temp.toFixed(1)}C | Sea +${state.weather.sea.toFixed(2)}m`;
+      $("#budgetText").textContent = money(state.budget);
+      $("#fundText").textContent = money(state.emergencyFund);
+      $("#tourismText").textContent = `${Math.round(state.tourism)}%`;
+      $("#fishingText").textContent = `${Math.round(state.fishing)}%`;
+      $("#inflationText").textContent = `${state.inflation.toFixed(1)}%`;
+      $("#researchText").textContent = money(state.researchFunds);
+      $("#rankText").textContent = getRank();
+      $("#regionText").textContent = state.region || regions[0];
+      $("#panicText").textContent = `${Math.round(state.panic || 0)}%`;
+      $("#trafficText").textContent = `${Math.round(state.traffic || 0)}%`;
+      $("#powerText").textContent = `${Math.round(state.powerGrid || 0)}%`;
+      $("#electionText").textContent = `${Math.round(state.electionSupport || 0)}%`;
+      $("#mediaHeadline").textContent = state.mediaHeadline || "Media channels are monitoring your next decision.";
+      $("#socialFeed").textContent = state.socialFeed || "Social feed quiet.";
+      const population = state.cities.reduce((sum, city) => sum + city.population, 0);
+      $("#quickMoneyText").textContent = money(state.budget);
+      $("#quickTrustText").textContent = `${Math.round(state.trust)}%`;
+      $("#quickPopulationText").textContent = population.toLocaleString();
+      const band = signalBand();
+      $("#quickThreatText").textContent = currentCrisis ? band.label : "Idle";
+      $("#quickThreatTile").className = `command-tile ${band.className}`;
+      $("#quickRankText").textContent = getRank();
+      $("#nextStepText").textContent = getNextStepText();
+      $("#missionText").textContent = getMissionText();
+      $("#economyBudgetText").textContent = money(state.budget);
+      $("#economyFundText").textContent = money(state.emergencyFund);
+      $("#economyTourismText").textContent = `${Math.round(state.tourism)}%`;
+      $("#economyFishingText").textContent = `${Math.round(state.fishing)}%`;
+      $("#economyInflationText").textContent = `${state.inflation.toFixed(1)}%`;
+      $("#economyElectionText").textContent = `${Math.round(state.electionSupport)}%`;
+      $("#reportLivesText").textContent = state.livesSaved.toLocaleString();
+      $("#reportCasualtiesText").textContent = state.casualties.toLocaleString();
+      $("#reportFalseText").textContent = state.falseAlarms;
+      $("#reportDamageText").textContent = money(state.damage);
+      $("#reportCorrectText").textContent = state.correctCalls;
+      $("#reportScoreText").textContent = state.score.toLocaleString();
+      $("#reportMediaText").textContent = state.mediaHeadline || "Media channels are monitoring your next decision.";
+      $("#reportSocialText").textContent = state.socialFeed || "Social feed quiet.";
+      $("#reportFeed").innerHTML = state.feed.slice(0, 10).map(item => `<div class="feed-item"><strong>${item.title}</strong><p>${item.text}</p><span class="mini">Year ${item.year}</span></div>`).join("");
+      setBar("trust", state.trust);
+      setBar("environment", state.environment);
+      setBar("support", state.support);
+      $("#livesSavedText").textContent = state.livesSaved.toLocaleString();
+      $("#casualtiesText").textContent = state.casualties.toLocaleString();
+      $("#falseAlarmText").textContent = state.falseAlarms;
+      $("#damageText").textContent = money(state.damage);
+      $("#correctText").textContent = state.correctCalls;
+      $("#scoreText").textContent = state.score.toLocaleString();
+      $("#accuracyText").textContent = `${Math.round(state.accuracy)}%`;
+      $("#coverageText").textContent = `${Math.round(state.coverage)}%`;
+      $("#evacPowerText").textContent = `${Math.round(state.evacPower)}%`;
+      $("#defenseText").textContent = `${Math.round(state.defense)}%`;
+      $("#aiLevelText").textContent = `Level ${state.aiLevel || 1}`;
+      $("#seaLevelText").textContent = `+${(state.seaLevel || 0).toFixed(2)}m`;
+      $("#aiUpgradeBtn").textContent = state.aiLevel >= 5 ? "AI Center Maxed" : `Upgrade AI Center (${money(80 + (state.aiLevel || 1) * 70)})`;
+      $("#aiUpgradeBtn").disabled = state.aiLevel >= 5;
+      renderCrisis();
+      renderMap();
+      renderCities();
+      renderShop();
+      renderFeed();
+      renderAchievements();
+      bodyClass();
+    }
+
+    function setBar(id, value) {
+      $(`#${id}Text`).textContent = Math.round(value);
+      const bar = $(`#${id}Bar`);
+      bar.style.width = `${clamp(value)}%`;
+      bar.style.background = value < 35 ? "linear-gradient(90deg, var(--red), var(--orange))" : value < 65 ? "linear-gradient(90deg, var(--yellow), var(--orange))" : "linear-gradient(90deg, var(--blue), var(--cyan))";
+    }
+
+    function signalBand(c = currentCrisis) {
+      if (!c) return { label: "Idle", className: "safe", dial: 0, cue: "No active wave pattern." };
+      const firstArrival = c.arrivals?.[0]?.minutes ?? c.warningTime;
+      const severePhysics = c.amplitude >= 4.2 || c.energy >= 78 || (c.speed >= 720 && firstArrival <= 25 && (c.amplitude >= 1.8 || c.energy >= 48)) || c.oscillation >= 82;
+      const elevatedPhysics = c.amplitude >= 2.0 || c.energy >= 52 || c.oscillation >= 58 || c.magnitude >= 7.4;
+      if (severePhysics) return { label: "Severe Wave Pattern", className: "danger", dial: 318, cue: "Large amplitude, high energy, fast travel, or strong oscillations." };
+      if (elevatedPhysics) return { label: "Unstable Readings", className: "warn", dial: 210, cue: "Some readings are elevated; compare multiple sensors." };
+      return { label: "Low Wave Activity", className: "safe", dial: 92, cue: "Small amplitude and lower energy readings." };
+    }
+
+    function confidenceBand(c = currentCrisis) {
+      const score = clamp(state.accuracy + state.coverage * 0.35 + state.weather.accuracy + state.aiLevel * 3);
+      if (score >= 78) return "clear";
+      if (score >= 55) return "usable but noisy";
+      return "uncertain";
+    }
+
+    function exposureBand(value) {
+      if (value >= 70000) return "Very high";
+      if (value >= 30000) return "High";
+      if (value >= 10000) return "Moderate";
+      return "Limited";
+    }
+
+    function costBand(value) {
+      if (value >= 260) return "Extreme";
+      if (value >= 150) return "Major";
+      if (value >= 70) return "Moderate";
+      return "Limited";
+    }
+
+    function physicsClues(c = currentCrisis) {
+      if (!c) return [];
+      const firstHeight = c.arrivals?.[0]?.height ?? c.amplitude;
+      const lastHeight = c.arrivals?.[c.arrivals.length - 1]?.height ?? c.amplitude;
+      const amplitudeTrend = lastHeight > firstHeight * 1.18 ? "rising" : lastHeight < firstHeight * 0.86 ? "falling" : "stable";
+      const frequencyPattern = c.frequency > 0.085 || (c.frequency < 0.03 && c.energy > 55) ? "unusual" : "normal";
+      const oscillationStability = c.oscillation >= 58 ? "unstable" : "calm";
+      const energyTransfer = c.energy >= 72 ? "high" : c.energy >= 42 ? "medium" : "low";
+      const waveSpeed = c.speed >= 720 ? "fast" : c.speed >= 520 ? "moderate" : "slow";
+      return [
+        ["Amplitude trend", amplitudeTrend, "Amplitude = wave height. Rising height can mean later waves may be more dangerous."],
+        ["Frequency pattern", frequencyPattern, "Frequency = how often waves pass a sensor. Unusual spacing can signal unstable wave behavior."],
+        ["Oscillation stability", oscillationStability, "Oscillation = repeated water movement. Unstable oscillations suggest the ocean is not settling."],
+        ["Energy transfer", energyTransfer, "Energy = destructive power carried by the wave through the ocean."],
+        ["Wave speed", waveSpeed, "Speed = how fast the threat reaches the city, reducing evacuation time."]
+      ];
+    }
+
+    function renderPhysicsClues(c = currentCrisis) {
+      const clues = physicsClues(c);
+      if (!clues.length) return "";
+      return `<div class="clue-grid">${clues.map(([label, value, hint]) => `<div class="clue-card" title="Why this matters: ${hint}"><span>${label}</span><strong>${value}</strong></div>`).join("")}</div>`;
+    }
+
+    function getRank() {
+      const score = state.score || 0;
+      return rankLevels.reduce((rank, item) => score >= item[1] ? item[0] : rank, rankLevels[0][0]);
+    }
+
+    function getNextStepText() {
+      if (!currentCrisis) return `Next ocean scan in ${state.nextIncidentIn || 0}s. Press Scan Ocean to check for warning signs now.`;
+      const band = signalBand();
+      return `${band.label}: ${band.cue} Check the wave train before reopening the coast.`;
+    }
+
+    function formatClock() {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const hour = String(Math.floor(state.hour || 0)).padStart(2, "0");
+      return `${months[(state.month || 1) - 1]} ${state.day || 1} ${hour}:00`;
+    }
+
+    function getMissionText() {
+      updateMissions();
+      const mission = (state.missions || [])[state.activeMission || 0];
+      if (!mission) return "Mission: keep the coastline alive.";
+      return `${mission.done ? "Mission complete" : "Mission"}: ${mission.name}`;
+    }
+
+    function updateMissions() {
+      if (!state.missions) return;
+      state.missions[0].done = state.year >= 6;
+      state.missions[1].done = state.livesSaved >= 1000000;
+      state.missions[2].done = state.trust >= 70 && state.year >= 3;
+      state.missions[3].done = state.falseAlarms < 3 && state.year >= 5;
+      state.missions[4].done = Boolean(state.megaSurvived);
+      const next = state.missions.findIndex(m => !m.done);
+      state.activeMission = next === -1 ? state.missions.length - 1 : next;
+    }
+
+    function renderCrisis() {
+      const c = currentCrisis;
+      const band = signalBand(c);
+      $("#riskDial").style.setProperty("--risk", `${band.dial}deg`);
+      $("#riskText").textContent = c ? band.label.split(" ")[0].toUpperCase() : "IDLE";
+      $("#decisionArea").classList.toggle("hidden", !c);
+      if (!c) {
+        $("#crisisTitle").textContent = "Ocean Monitoring Ready";
+        $("#crisisSummary").textContent = "Press Scan Ocean to check for earthquake activity and tsunami warning signs. The first scan starts automatically in a new game.";
+        $("#sensorGrid").innerHTML = "";
+        $("#sensorGridDetail").innerHTML = `<div class="sensor-card" title="Sensor data appears when a warning event is active."><span>Sensor Network</span><strong>Standing By</strong><p>Scan the ocean to inspect amplitude, speed, frequency, oscillation, and energy.</p></div>`;
+        return;
+      }
+      $("#crisisTitle").textContent = `${c.eventName}: ${c.magnitude.toFixed(1)} Mw near ${c.targetCity}`;
+      $("#crisisSummary").textContent = `${formatArrivalWindow(c)}. Direction ${c.direction}. Sensor confidence is ${confidenceBand(c)}. Later waves can be larger than the first.`;
+      const overviewCards = [
+        ["Wave Train", formatArrivalWindow(c), "Tsunamis often arrive as several waves over time."],
+        ["Wave Speed", `${Math.round(c.speed)} km/h`, "Deep-ocean tsunamis can move extremely fast."],
+        ["Amplitude", `${c.amplitude.toFixed(1)} m`, "Amplitude = wave height."],
+        ["Energy Transfer", `${Math.round(c.energy)}/100`, "Higher energy usually means more destructive power."]
+      ];
+      const sensorCards = [
+        ["Warning Source", c.eventName, "Different ocean readings create different warning and evacuation problems."],
+        ["Earthquake Magnitude", `${c.magnitude.toFixed(1)} Mw`, "Larger earthquakes move more seafloor and can push more water."],
+        ["Ocean Depth", `${Math.round(c.depth).toLocaleString()} m`, "Tsunami wave speed grows with water depth."],
+        ["Wave Speed", `${Math.round(c.speed)} km/h`, "Fast waves reduce evacuation time."],
+        ["Amplitude", `${c.amplitude.toFixed(1)} m`, "High amplitude means a taller wave and often more energy."],
+        ["Frequency", `${c.frequency.toFixed(3)} Hz`, "Frequency shows how often waves pass the sensor."],
+        ["Oscillation Level", `${Math.round(c.oscillation)}/100`, "Oscillations are repeated up-and-down water motion."],
+        ["Energy Transfer", `${Math.round(c.energy)}/100`, "Waves transfer energy through water, not whole oceans of water moving forward."],
+        ["Wave Arrivals", formatWaveTrain(c), "The first wave is not always the largest."],
+        ["Traffic / Power", `${Math.round(state.traffic)}% / ${Math.round(state.powerGrid)}%`, "Jammed roads and power failure slow evacuation."]
+      ];
+      $("#sensorGrid").innerHTML = overviewCards.map(([label, value, hint]) => `<div class="sensor-card" title="${hint}"><span>${label}</span><strong>${value}</strong><p>${hint}</p></div>`).join("");
+      $("#sensorGridDetail").innerHTML = `<h3>Physics Clues</h3>${renderPhysicsClues(c)}` + sensorCards.map(([label, value, hint]) => `<div class="sensor-card" title="${hint}"><span>${label}</span><strong>${value}</strong><p>${hint}</p></div>`).join("");
+    }
+
+    function renderMap() {
+      const map = $("#worldMap");
+      const c = currentCrisis;
+      const plates = `
+        <div class="plate" style="left:8%;top:18%;width:46%;height:62%;--r:-14deg;"></div>
+        <div class="plate" style="left:46%;top:8%;width:42%;height:72%;--r:18deg;"></div>
+        <div class="plate" style="left:24%;top:54%;width:58%;height:32%;--r:5deg;"></div>`;
+      const cities = state.cities.map(city => {
+        const activity = city.status === "Evacuating" ? "evacuating" : city.status === "Damaged" || city.status === "Rebuilding" ? "damaged" : "";
+        return `<div class="city-dot ${c && c.affectedCities.includes(city.name) ? "danger" : activity}" style="left:${city.x}%;top:${city.y}%"><span class="city-label">${city.name}</span></div>`;
+      }).join("");
+      const buildings = state.cities.flatMap(city => Object.entries(city.buildings || {}).flatMap(([type, count]) =>
+        Array.from({ length: count }, (_, i) => `<div class="building-dot" title="${type}" style="left:${clamp(city.x + (i % 3 - 1) * 2 + rand(-0.6, 0.6), 5, 95)}%;top:${clamp(city.y + 4 + Math.floor(i / 3) * 2 + rand(-0.6, 0.6), 5, 95)}%"></div>`)
+      )).join("");
+      const sensors = Array.from({ length: Math.max(4, Math.round(state.coverage / 9)) }, (_, i) => {
+        const angle = i * 137.5;
+        const x = clamp(50 + Math.cos(angle) * rand(16, 38) + rand(-5, 5), 6, 94);
+        const y = clamp(50 + Math.sin(angle) * rand(13, 34) + rand(-5, 5), 8, 92);
+        return `<div class="sensor-dot" style="left:${x}%;top:${y}%"></div>`;
+      }).join("");
+      const quake = c ? `<div class="quake-dot" style="left:${c.x}%;top:${c.y}%"></div><div class="route" style="${routeStyle(c.x, c.y, c.cityX, c.cityY)}"></div>` : "";
+      const storm = state.weather.storm ? `<div class="storm-dot" style="left:${rand(20,80)}%;top:${rand(15,45)}%"></div>` : "";
+      const ash = c && c.ash ? `<div class="ash-cloud" style="left:${clamp(c.x + 8, 6, 94)}%;top:${clamp(c.y - 8, 6, 94)}%"></div>` : "";
+      const power = state.powerGrid > 58 ? state.cities.slice(0, -1).map((city, i) => `<div class="power-line" style="${routeStyle(city.x, city.y, state.cities[i + 1].x, state.cities[i + 1].y)}"></div>`).join("") : "";
+      map.innerHTML = plates + power + cities + buildings + sensors + quake + storm + ash;
+      renderMiniMap();
+    }
+
+    function routeStyle(x1, y1, x2, y2) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      return `left:${x1}%;top:${y1}%;width:${length}%;transform:rotate(${angle}deg);`;
+    }
+
+    function animateCrisisOnMap() {
+      if (!currentCrisis) return;
+      const map = $("#worldMap");
+      for (let i = 0; i < 4; i++) {
+        const ring = document.createElement("div");
+        ring.className = "wave-ring";
+        ring.style.left = `${currentCrisis.x}%`;
+        ring.style.top = `${currentCrisis.y}%`;
+        ring.style.setProperty("--size", `${160 + i * 96}px`);
+        ring.style.animationDelay = `${i * 0.45}s`;
+        map.appendChild(ring);
+        setTimeout(() => ring.remove(), 4500);
+      }
+    }
+
+    function renderMiniMap() {
+      $("#miniMap").innerHTML = state.cities.map(city => `<div class="city-dot" style="width:10px;height:10px;left:${city.x}%;top:${city.y}%"></div>`).join("");
+    }
+
+    function renderCities() {
+      $("#cityList").innerHTML = state.cities.map(city => `
+        <div class="city-card">
+          <strong>${city.name} <span class="mini">(${city.status})</span></strong>
+          <p>Population ${city.population.toLocaleString()} | Terrain risk ${Math.round(city.risk)}%</p>
+          <div class="city-meta">
+            <span class="mini">Economy ${Math.round(city.economy)}%</span>
+            <span class="mini">Happiness ${Math.round(city.happiness)}%</span>
+            <span class="mini">Trust ${Math.round(city.trust)}%</span>
+            <span class="mini">Evacuation ${Math.round(city.evac)}%</span>
+            <span class="mini">Infrastructure ${Math.round(city.infra)}%</span>
+            <span class="mini">Sea exposure ${Math.round(city.risk)}%</span>
+            <span class="mini">Traffic ${Math.round(city.traffic || 0)}%</span>
+            <span class="mini">Power ${Math.round(city.power || 0)}%</span>
+          </div>
+          <div class="build-grid">
+            ${Object.entries(buildingTypes).map(([type, b]) => `<button class="build-btn" title="Install ${b.name} to protect the city from tsunami damage." data-city="${city.name}" data-build="${type}">Install ${b.name} (${money(b.cost * (1 + ((city.buildings || {})[type] || 0) * 0.45))})</button>`).join("")}
+          </div>
+        </div>
+      `).join("");
+      $$(".build-btn").forEach(btn => btn.addEventListener("click", () => buildInCity(btn.dataset.city, btn.dataset.build)));
+    }
+
+    function renderShop() {
+      $("#shopTabs").innerHTML = Object.entries(shopCategories).map(([id, name]) => `<button class="tab-btn ${id === selectedShopCategory ? "active" : ""}" data-shop="${id}">${name}</button>`).join("");
+      $$("#shopTabs .tab-btn").forEach(btn => btn.addEventListener("click", () => { selectedShopCategory = btn.dataset.shop; renderShop(); }));
+      $("#shopList").innerHTML = upgrades.filter(u => u.category === selectedShopCategory).map(u => {
+        const owned = state.owned.includes(u.id);
+        const price = u.cost * difficulties[state.difficulty].cost;
+        return `<div class="shop-item">
+          <div><strong>${u.name}</strong><p>${u.description}</p><span class="mini">Cost ${money(price)}</span></div>
+          <button class="buy-btn ${owned ? "owned" : ""}" data-buy="${u.id}" ${owned || state.budget < price ? "disabled" : ""}>${owned ? "Online" : "Buy"}</button>
+        </div>`;
+      }).join("");
+      $$("[data-buy]").forEach(btn => btn.addEventListener("click", () => buyUpgrade(btn.dataset.buy)));
+    }
+
+    function renderFeed() {
+      $("#eventFeed").innerHTML = state.feed.slice(0, 12).map(item => `<div class="feed-item"><strong>${item.title}</strong><p>${item.text}</p><span class="mini">Year ${item.year}</span></div>`).join("");
+    }
+
+    function renderAchievements() {
+      $("#achievementList").innerHTML = achievements.map(a => {
+        const unlocked = state.unlockedAchievements.includes(a.id);
+        return `<div class="achievement" style="opacity:${unlocked ? 1 : 0.55};border-color:${unlocked ? "rgba(60,255,177,0.34)" : "var(--line)"}"><strong>${unlocked ? "Unlocked: " : ""}${a.name}</strong><p>${a.desc}</p></div>`;
+      }).join("");
+    }
+
+    function addFeed(title, text, type = "info") {
+      state.feed.unshift({ title, text, type, year: state.year || 1, at: Date.now() });
+      state.feed = state.feed.slice(0, 28);
+    }
+
+    function showDecisionResult(r) {
+      const correctText = r.correct ? "EVIDENCE MATCHED" : r.partial ? "MIXED EVIDENCE" : "EVIDENCE MISREAD";
+      const savedBand = exposureBand(r.livesSaved);
+      const casualtyBand = exposureBand(r.casualties);
+      $("#resultBox").innerHTML = `
+        <div class="correct-banner ${r.resultType === "bad" ? "bad" : r.resultType === "warn" ? "warn" : ""}">
+          <div class="banner-title"><span>${r.title}</span><span class="verdict">${correctText}</span></div>
+          <p>${r.explanation}</p>
+          <div class="stat-grid">
+            <div class="stat"><span>Protection Result</span><strong>${savedBand}</strong></div>
+            <div class="stat"><span>Human Impact</span><strong>${casualtyBand}</strong></div>
+            <div class="stat"><span>Response Cost</span><strong>${costBand(r.cost)}</strong></div>
+            <div class="stat"><span>Coastal Damage</span><strong>${costBand(r.damage)}</strong></div>
+          </div>
+          <div class="start-actions">
+            <button id="resultNextIncidentBtn" class="primary">Scan Ocean</button>
+          </div>
+        </div>`;
+      $("#resultNextIncidentBtn").addEventListener("click", generateCrisis);
+      toast(correctText + ": " + r.title, r.correct ? "good" : r.partial ? "warn" : "danger");
+      playSound(r.correct ? "good" : "alarm");
+    }
+
+    function showCrisisPopup() {
+      if (!currentCrisis) return;
+      const c = currentCrisis;
+      const band = signalBand(c);
+      $("#modalTitle").textContent = "Tsunami Warning Event";
+      $("#modalBody").innerHTML = `
+        <div class="correct-banner ${band.className === "danger" ? "bad" : band.className === "warn" ? "warn" : ""}">
+          <div class="banner-title"><span>${c.eventName}</span><span class="verdict">${band.label}</span></div>
+          <div class="stat-grid">
+            <div class="stat"><span>Wave Train</span><strong>${formatArrivalWindow(c)}</strong></div>
+            <div class="stat"><span>Affected</span><strong>${c.affectedCities.join(", ")}</strong></div>
+            <div class="stat"><span>Amplitude</span><strong>${c.amplitude.toFixed(1)} m</strong></div>
+            <div class="stat"><span>Wave Speed</span><strong>${Math.round(c.speed)} km/h</strong></div>
+            <div class="stat"><span>Frequency</span><strong>${c.frequency.toFixed(3)} Hz</strong></div>
+            <div class="stat"><span>Ocean Depth</span><strong>${Math.round(c.depth).toLocaleString()} m</strong></div>
+            <div class="stat"><span>Population Exposure</span><strong>${exposureBand(c.possibleCasualties)}</strong></div>
+            <div class="stat"><span>Cost Exposure</span><strong>${costBand(c.economicImpact)}</strong></div>
+          </div>
+          <h3 style="margin-top:12px;">Physics Clues</h3>
+          ${renderPhysicsClues(c)}
+          <p class="mission-line">${formatWaveTrain(c)}. Keep evacuations active until the wave train is over.</p>
+          <div class="start-actions">
+            <button id="popupWarnBtn" class="red-btn">Send Warning</button>
+            <button id="popupWaitBtn" class="blue-btn">Wait for More Data</button>
+            <button id="popupTeamsBtn" class="blue-btn">Deploy Emergency Teams</button>
+            <button id="popupFundsBtn" class="blue-btn">Spend Emergency Funds</button>
+            <button id="popupAidBtn" class="blue-btn">Request Aid</button>
+            <button id="popupIgnoreBtn">Ignore Threat</button>
+          </div>
+          <p class="mission-line">Support actions improve readiness, but you still need to decide whether to warn, wait, or stand down.</p>
+        </div>`;
+      $("#modalBackdrop").classList.add("active");
+      $("#popupWarnBtn").addEventListener("click", () => { $("#modalBackdrop").classList.remove("active"); decision("warn"); });
+      $("#popupWaitBtn").addEventListener("click", () => { $("#modalBackdrop").classList.remove("active"); decision("wait"); });
+      $("#popupIgnoreBtn").addEventListener("click", () => { $("#modalBackdrop").classList.remove("active"); decision("ignore"); });
+      $("#popupTeamsBtn").addEventListener("click", () => { deployEmergencyTeams(); showCrisisPopup(); });
+      $("#popupFundsBtn").addEventListener("click", () => { spendEmergencyFunds(); showCrisisPopup(); });
+      $("#popupAidBtn").addEventListener("click", () => { requestAid(); showCrisisPopup(); });
+    }
+
+    function deployEmergencyTeams() {
+      if (!currentCrisis) return;
+      const cost = 24;
+      if (state.budget < cost) {
+        toast("Not enough budget to deploy emergency teams.", "warn");
+        return;
+      }
+      state.budget -= cost;
+      state.evacPower = clamp(state.evacPower + 5);
+      state.panic = clamp(state.panic - 6);
+      addFeed("Emergency teams deployed", "Coast Guard, medical teams, and rescue crews moved into position.", "good");
+      toast("Emergency teams deployed. Evacuation power improved.", "good");
+      renderAll();
+    }
+
+    function spendEmergencyFunds() {
+      if (!currentCrisis) return;
+      const spend = Math.min(state.emergencyFund, 36);
+      if (spend <= 0) {
+        toast("Emergency fund is empty.", "warn");
+        return;
+      }
+      state.emergencyFund -= spend;
+      state.defense = clamp(state.defense + 4);
+      state.powerGrid = clamp(state.powerGrid + 5);
+      addFeed("Emergency funds released", `${money(spend)} spent on barriers, generators, and evacuation logistics.`, "good");
+      toast("Emergency funds activated.", "good");
+      renderAll();
+    }
+
+    function bodyClass() {
+      document.body.classList.toggle("storm", Boolean(state.weather && state.weather.storm));
+      document.body.classList.toggle("alert", Boolean(currentCrisis && currentCrisis.measuredRisk > 62));
+      $("#app").classList.toggle("shake", Boolean(currentCrisis && currentCrisis.magnitude > 8.3));
+      if (currentCrisis && currentCrisis.magnitude > 8.3) setTimeout(() => $("#app").classList.remove("shake"), 1400);
+    }
+
+    function startGameLoop() {
+      stopGameLoop();
+      state.lastTick = Date.now();
+      scheduleNextIncident(1200);
+      feedPulseAt = Date.now() + 3500;
+      gameLoopTimer = setInterval(gameTick, 1000);
+    }
+
+    function stopGameLoop() {
+      if (gameLoopTimer) clearInterval(gameLoopTimer);
+      gameLoopTimer = null;
+    }
+
+    function scheduleNextIncident(delayMs) {
+      nextIncidentAt = Date.now() + (delayMs ?? rand(20000, 60000) / Math.max(0.5, state.speed || 1));
+      state.nextIncidentIn = Math.max(0, Math.round((nextIncidentAt - Date.now()) / 1000));
+    }
+
+    function gameTick() {
+      if (!state.year || state.paused) return;
+      const now = Date.now();
+      const speed = state.speed || 1;
+      advanceClock(speed);
+      if (!currentCrisis && now >= nextIncidentAt) generateCrisis();
+      if (now >= feedPulseAt) {
+        backgroundPulse();
+        feedPulseAt = now + rand(5000, 11000) / speed;
+      }
+      state.nextIncidentIn = currentCrisis ? 0 : Math.max(0, Math.round((nextIncidentAt - now) / 1000));
+      renderAll();
+    }
+
+    function advanceClock(speed) {
+      state.hour += speed * 3;
+      while (state.hour >= 24) {
+        state.hour -= 24;
+        state.day += 1;
+      }
+      while (state.day > 30) {
+        state.day -= 30;
+        state.month += 1;
+        seasonalUpdate();
+      }
+      while (state.month > 12) {
+        state.month -= 12;
+        state.year += 1;
+        yearlyEconomyTick(true);
+        initTabs();
+      }
+    }
+
+    function seasonalUpdate() {
+      state.weather = makeWeather();
+      state.tourism = clamp(state.tourism + (state.month >= 5 && state.month <= 8 ? 2 : -1));
+      state.fishing = clamp(state.fishing + (state.environment > 70 ? 1 : -2));
+      state.cities.forEach(city => {
+        if (city.status === "Damaged" && rand(0, 100) > 48) city.status = "Rebuilding";
+        else if (city.status === "Rebuilding" && rand(0, 100) > 60) city.status = "Stable";
+      });
+    }
+
+    function backgroundPulse() {
+      const pulses = [
+        ["Sensor update", `Buoy ${Math.floor(rand(1, 9))} reports ${pick(["stable pressure", "minor oscillations", "rough surface waves", "clean telemetry"])}.`, "info"],
+        ["Weather report", `${state.weather.name} conditions over ${state.region}.`, state.weather.storm ? "warn" : "info"],
+        ["Citizen reaction", pick(["Residents ask for clearer evacuation routes.", "Schools completed a short drill.", "Local radio repeats readiness advice.", "Harbor crews test emergency sirens."]), "info"],
+        ["Economy report", `Tourism ${Math.round(state.tourism)}%, fishing ${Math.round(state.fishing)}%, inflation ${state.inflation.toFixed(1)}%.`, "info"],
+        ["Government message", state.support > 60 ? "Ministry praises preparedness metrics." : "Legislators question agency spending.", state.support > 60 ? "good" : "warn"],
+        ["Science desk", pick(["Wave model recalibrated.", "AI checks amplitude-energy correlation.", "Ocean-depth model updated.", "Frequency filter reduced noise."]), "good"]
+      ];
+      const pulse = pick(pulses);
+      addFeed(pulse[0], pulse[1], pulse[2]);
+      if (rand(0, 100) > 82 && !currentCrisis) minorEvent();
+    }
+
+    function minorEvent() {
+      const event = pick([
+        () => { state.accuracy = clamp(state.accuracy - 2); addFeed("Sensor malfunction", "A coastal sensor delayed readings by several minutes.", "warn"); },
+        () => { state.panic = clamp(state.panic + 5); addFeed("Public panic", "A viral post exaggerates offshore wave height.", "warn"); },
+        () => { state.budget += 18; addFeed("Funding opportunity", "A resilience grant added emergency planning money.", "good"); },
+        () => { state.trust = clamp(state.trust - 3); addFeed("Tourism concern", "Hotel owners complain about warning headlines.", "warn"); },
+        () => { state.researchFunds += 12; addFeed("Scientific breakthrough", "Researchers improved tsunami travel-time estimates.", "good"); },
+        () => { state.powerGrid = clamp(state.powerGrid - 4); addFeed("Power grid fault", "A substation outage affects warning towers.", "warn"); }
+      ]);
+      event();
+    }
+
+    function checkAchievements() {
+      achievements.forEach(a => {
+        if (!state.unlockedAchievements.includes(a.id) && a.check(state)) {
+          state.unlockedAchievements.push(a.id);
+          state.score += 120;
+          toast("Achievement unlocked: " + a.name, "good");
+          addFeed("Achievement unlocked", a.name, "good");
+        }
+      });
+    }
+
+    function showScienceLab() {
+      $("#modalTitle").textContent = "Science Lab";
+      $("#modalBody").innerHTML = `
+        <p>This command system teaches tsunami physics through operational decisions.</p>
+        <div class="science-diagram">
+          <div class="diagram-card"><strong>Wave Speed</strong><p>In deep water, tsunami speed depends strongly on ocean depth. Deeper water allows faster waves.</p><div class="diagram-wave"></div></div>
+          <div class="diagram-card"><strong>Amplitude</strong><p>Amplitude is wave height. Higher amplitude often means more destructive energy at shore.</p><div class="diagram-wave" style="height:58px;"></div></div>
+          <div class="diagram-card"><strong>Frequency</strong><p>Frequency is how often waves pass a sensor. Unusual patterns can reveal danger.</p><div class="diagram-wave" style="clip-path:polygon(0 55%,8% 20%,16% 55%,24% 20%,32% 55%,40% 20%,48% 55%,56% 20%,64% 55%,72% 20%,80% 55%,88% 20%,100% 55%,100% 100%,0 100%);"></div></div>
+          <div class="diagram-card"><strong>Oscillation</strong><p>Water moves up and down repeatedly while wave energy travels across the ocean.</p><div class="diagram-wave"></div></div>
+        </div>
+        <h3>Warning System Benefits</h3>
+        <p>Early warnings save lives and help cities evacuate before high-energy waves reach shore. Sensor networks also reduce guesswork by comparing earthquake, pressure, buoy, satellite, and wave data.</p>
+        <h3>Advanced Warning Scenarios</h3>
+        <p>Large tsunami warning events can involve multiple wave arrivals. Seafloor volcanic disturbances, underwater landslides, unusual wave readings, and aftershocks can complicate sensor interpretation and evacuation timing.</p>
+        <h3>City and Human Systems</h3>
+        <p>Population growth increases economic value but makes evacuation harder. Traffic jams, power-grid failures, media pressure, social misinformation, and public panic can turn a technically correct warning into an operational failure.</p>
+        <h3>Climate and Environment</h3>
+        <p>Sea level rises over decades, storms intensify, pollution can increase after coastal damage, and seawalls can protect buildings while affecting marine ecosystems.</p>
+        <h3>Limitations and Risks</h3>
+        <p>False alarms cost money and can reduce trust. Nearby earthquakes, storms, failed sensors, and communication blackouts can limit warning time or accuracy.</p>
+        <h3>Recommendation</h3>
+        <p>Invest in warning systems, but pair them with public education, maintained sensors, evacuation routes, and transparent decision rules.</p>`;
+      $("#modalBackdrop").classList.add("active");
+    }
+
+    function showTutorial() {
+      if (state.tutorialShown) return false;
+      state.tutorialShown = true;
+      state.paused = true;
+      $("#modalTitle").textContent = "Command Tutorial";
+      $("#modalBody").innerHTML = `
+        <div class="science-diagram">
+          <div class="diagram-card"><strong>Sensors</strong><p>Watch amplitude, frequency, oscillation, energy, and arrival time. High values mean danger.</p><div class="diagram-wave"></div></div>
+          <div class="diagram-card"><strong>Evacuation</strong><p>Warnings save lives, but traffic, panic, and power outages slow escape.</p><div class="diagram-wave"></div></div>
+          <div class="diagram-card"><strong>Economy</strong><p>False alarms cost money and trust. Good calls bring funding and public support.</p><div class="diagram-wave"></div></div>
+          <div class="diagram-card"><strong>Protection</strong><p>Install sensors, shelters, sirens, seawalls, labs, and backup power to protect cities from tsunamis.</p><div class="diagram-wave"></div></div>
+        </div>
+        <p>Ocean monitoring events appear automatically every 20-60 seconds. Use Pause, 1x, 2x, or 5x to control pacing.</p>
+        <div class="start-actions"><button id="tutorialCloseBtn" class="primary">Begin</button></div>`;
+      $("#modalBackdrop").classList.add("active");
+      $("#tutorialCloseBtn").addEventListener("click", () => {
+        $("#modalBackdrop").classList.remove("active");
+        state.paused = false;
+        $("#pauseBtn").classList.remove("active");
+        $("#pauseBtn").textContent = "Pause";
+        generateCrisis();
+      });
+      saveGame(false);
+      return true;
+    }
+
+    function closeModal() {
+      const wasTutorial = $("#modalTitle").textContent === "Command Tutorial";
+      $("#modalBackdrop").classList.remove("active");
+      if (wasTutorial && state.year && !currentCrisis) {
+        state.paused = false;
+        $("#pauseBtn").classList.remove("active");
+        $("#pauseBtn").textContent = "Pause";
+        generateCrisis();
+      }
+    }
+
+    function showEndReport() {
+      $("#modalTitle").textContent = "Final Agency Report";
+      const protectedScore = state.livesSaved - state.casualties * 3;
+      const invest = state.score + protectedScore / 100 + state.trust * 4 + state.support * 2 > 600;
+      $("#modalBody").innerHTML = `
+        <p>${invest ? "Recommendation: continue and expand the Tsunami Warning Command system." : "Recommendation: invest in the system, but improve operations, public trust, and maintenance before the next warning season."}</p>
+        <div class="end-report">
+          <div class="stat"><span>Final Score</span><strong>${state.score.toLocaleString()}</strong></div>
+          <div class="stat"><span>Lives Saved</span><strong>${state.livesSaved.toLocaleString()}</strong></div>
+          <div class="stat"><span>Casualties</span><strong>${state.casualties.toLocaleString()}</strong></div>
+          <div class="stat"><span>Budget</span><strong>${money(state.budget)}</strong></div>
+          <div class="stat"><span>Trust</span><strong>${Math.round(state.trust)}%</strong></div>
+          <div class="stat"><span>False Alarms</span><strong>${state.falseAlarms}</strong></div>
+        </div>
+        <p><strong>Science conclusion:</strong> The best agencies do not react to earthquake magnitude alone. They combine wave speed, amplitude, frequency, oscillations, energy-transfer estimates, weather, warning time, and city readiness.</p>
+        <div class="start-actions"><button id="finalRestartBtn" class="primary">Start New Agency</button></div>`;
+      $("#modalBackdrop").classList.add("active");
+      $("#finalRestartBtn").addEventListener("click", () => {
+        $("#modalBackdrop").classList.remove("active");
+        createNewState();
+        renderAll();
+      });
+    }
+
+    function toast(text, type = "info") {
+      const node = document.createElement("div");
+      node.className = `toast ${type}`;
+      node.textContent = text;
+      $("#notifications").appendChild(node);
+      setTimeout(() => node.remove(), 4600);
+    }
+
+    function saveGame(showToast = true) {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      if (showToast) toast("Agency progress saved.", "good");
+      renderStartOptions();
+    }
+
+    function setGameSpeed(speed) {
+      state.speed = speed;
+      state.paused = false;
+      $$(".speed-btn[data-speed]").forEach(btn => btn.classList.toggle("active", Number(btn.dataset.speed) === speed));
+      $("#pauseBtn").classList.remove("active");
+      scheduleNextIncident(Math.max(2000, (state.nextIncidentIn || 20) * 1000 / speed));
+      renderAll();
+    }
+
+    function togglePause() {
+      state.paused = !state.paused;
+      $("#pauseBtn").classList.toggle("active", state.paused);
+      $("#pauseBtn").textContent = state.paused ? "Paused" : "Pause";
+      if (!state.paused) scheduleNextIncident(Math.max(3000, (state.nextIncidentIn || 20) * 1000 / (state.speed || 1)));
+      renderAll();
+    }
+
+    function loadGame() {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) {
+        toast("No saved agency found.", "warn");
+        return false;
+      }
+      Object.assign(state, JSON.parse(raw));
+      normalizeState();
+      initTabs();
+      showScreen("gameScreen");
+      renderAll();
+      startGameLoop();
+      toast("Saved agency restored.", "good");
+      return true;
+    }
+
+    function normalizeState() {
+      state.panic ??= 12;
+      state.traffic ??= 18;
+      state.powerGrid ??= 86;
+      state.electionSupport ??= 68;
+      state.climate ??= 0;
+      state.seaLevel ??= 0.08;
+      state.pollution ??= 4;
+      state.marineLife ??= 88;
+      state.aiLevel ??= 1;
+      state.month ??= 1;
+      state.day ??= 1;
+      state.hour ??= 6;
+      state.speed ??= 1;
+      state.paused ??= false;
+      state.nextIncidentIn ??= 0;
+      state.region ??= regions[0];
+      state.noFalseAlarmRun ??= 0;
+      state.tutorialShown ??= false;
+      state.missions ??= [
+        { name: "Survive 5 years", done: false },
+        { name: "Save 1 million citizens", done: false },
+        { name: "Keep trust above 70%", done: false },
+        { name: "Avoid 3 false alarms", done: false },
+        { name: "Protect all cities during a mega tsunami", done: false }
+      ];
+      state.activeMission ??= 0;
+      state.mediaHeadline ??= "Media channels are monitoring your next decision.";
+      state.socialFeed ??= "Social feed quiet.";
+      state.cities.forEach(city => {
+        city.traffic ??= rand(12, 34);
+        city.power ??= rand(74, 96);
+        city.buildings ??= {};
+      });
+      if (currentCrisis && !currentCrisis.arrivals) {
+        currentCrisis.arrivals = makeWaveArrivals(currentCrisis.warningTime || 10, currentCrisis.amplitude || 1, currentCrisis.energy || 20, currentCrisis.mega, currentCrisis.disasterType || "quake");
+      }
+    }
+
+    function showScreen(id) {
+      $$(".screen").forEach(screen => screen.classList.remove("active"));
+      $(`#${id}`).classList.add("active");
+      scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function initTabs() {
+      const unlocked = unlockedTabs();
+      $("#tabs").innerHTML = tabs.map(([id, label]) => {
+        const locked = !unlocked.includes(id);
+        return `<button class="tab-btn ${id === "dashboard" ? "active" : ""} ${locked ? "locked" : ""}" data-tab="${id}" title="${locked ? "Unlocks later as the agency grows." : tabTooltip(id)}" ${locked ? "disabled" : ""}>${label}${locked ? " - Locked" : ""}</button>`;
+      }).join("");
+      $$("#tabs .tab-btn").forEach(btn => btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        $$("#tabs .tab-btn").forEach(item => item.classList.remove("active"));
+        $$(".tab-content").forEach(item => item.classList.remove("active"));
+        btn.classList.add("active");
+        $(`#tab-${btn.dataset.tab}`).classList.add("active");
+      }));
+    }
+
+    function unlockedTabs() {
+      if (!state.year || state.mode === "sandbox") return tabs.map(t => t[0]);
+      const open = ["dashboard", "sensors", "cities"];
+      if (state.year >= 3) open.push("economy");
+      if (state.year >= 4) open.push("shop", "research");
+      if (state.year >= 5) open.push("reports");
+      return open;
+    }
+
+    function tabTooltip(id) {
+      return {
+        dashboard: "Main emergency decisions and threat overview.",
+        sensors: "Detailed wave science and sensor readings.",
+        cities: "Population, evacuation, and city protection systems.",
+        economy: "Budget, inflation, tourism, fishing, and elections.",
+        shop: "Defense, response, public systems, and sensors.",
+        research: "AI prediction, science upgrades, and climate data.",
+        reports: "Results, media reaction, social feed, and alerts."
+      }[id] || "";
+    }
+
+    function initAudio() {
+      if (audio) return;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audio = { ctx: new AudioContext(), muted: true, volume: 0.38, ambient: null };
+      const gain = audio.ctx.createGain();
+      gain.gain.value = 0;
+      gain.connect(audio.ctx.destination);
+      audio.gain = gain;
+      const osc = audio.ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 72;
+      osc.connect(gain);
+      osc.start();
+      audio.ambient = osc;
+    }
+
+    function setMuted(muted) {
+      initAudio();
+      audio.muted = muted;
+      audio.gain.gain.setTargetAtTime(muted ? 0 : audio.volume * 0.05, audio.ctx.currentTime, 0.05);
+      $("#muteBtn").textContent = muted ? "Muted" : "Audio On";
+    }
+
+    function playSound(kind) {
+      if (!audio || audio.muted) return;
+      const ctx = audio.ctx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      if (kind === "alarm") {
+        osc.type = "sawtooth"; osc.frequency.setValueAtTime(460, now); osc.frequency.setValueAtTime(620, now + 0.14);
+        gain.gain.setValueAtTime(audio.volume * 0.09, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      } else if (kind === "quake") {
+        osc.type = "triangle"; osc.frequency.setValueAtTime(48, now);
+        gain.gain.setValueAtTime(audio.volume * 0.12, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      } else {
+        osc.type = "sine"; osc.frequency.setValueAtTime(760, now);
+        gain.gain.setValueAtTime(audio.volume * 0.06, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      }
+      osc.start(now);
+      osc.stop(now + 0.9);
+    }
+
+    function drawChart() {
+      const canvas = $("#waveChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.025)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(25,230,255,0.12)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 48) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y < h; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      const amp = currentCrisis ? Math.min(56, currentCrisis.amplitude * 5.8 + currentCrisis.energy * 0.08) : 12;
+      const freq = currentCrisis ? currentCrisis.frequency * 56 + currentCrisis.speed / 900 : 1.8;
+      const travel = currentCrisis ? Math.min(18, currentCrisis.speed / 80) : 2;
+      ctx.beginPath();
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin((x / 26) * freq + chartPhase * travel) * amp + Math.sin((x / 11) + chartPhase * 1.5) * 4;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = currentCrisis && signalBand(currentCrisis).className === "danger" ? "#ff3b5c" : currentCrisis && signalBand(currentCrisis).className === "warn" ? "#ffd166" : "#19e6ff";
+      ctx.lineWidth = 3;
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      chartPhase += currentCrisis ? 0.02 + currentCrisis.speed / 28000 : 0.035;
+      requestAnimationFrame(drawChart);
+    }
+
+    function boot() {
+      renderStartOptions();
+      initTabs();
+      $("#newGameBtn").addEventListener("click", () => {
+        initAudio();
+        createNewState();
+        initTabs();
+        showScreen("gameScreen");
+        renderAll();
+        saveGame(false);
+        startGameLoop();
+        if (!showTutorial()) setTimeout(generateCrisis, 350);
+      });
+      $("#continueBtn").addEventListener("click", () => { initAudio(); loadGame(); });
+      $("#resetSaveBtn").addEventListener("click", () => { localStorage.removeItem(SAVE_KEY); renderStartOptions(); toast("Save deleted.", "warn"); });
+      $("#nextEventBtn").addEventListener("click", generateCrisis);
+      $("#pauseBtn").addEventListener("click", togglePause);
+      $$(".speed-btn[data-speed]").forEach(btn => btn.addEventListener("click", () => setGameSpeed(Number(btn.dataset.speed))));
+      $("#warnBtn").addEventListener("click", () => decision("warn"));
+      $("#waitBtn").addEventListener("click", () => decision("wait"));
+      $("#ignoreBtn").addEventListener("click", () => decision("ignore"));
+      $("#scienceBtn").addEventListener("click", showScienceLab);
+      $("#closeModalBtn").addEventListener("click", closeModal);
+      $("#modalBackdrop").addEventListener("click", e => { if (e.target.id === "modalBackdrop") closeModal(); });
+      $("#saveBtn").addEventListener("click", () => saveGame(true));
+      $("#menuBtn").addEventListener("click", () => { stopGameLoop(); showScreen("startScreen"); });
+      $("#fullscreenBtn").addEventListener("click", () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+      $("#aiUpgradeBtn").addEventListener("click", upgradeAiCenter);
+      $("#aidBtn").addEventListener("click", requestAid);
+      $("#muteBtn").addEventListener("click", () => setMuted(!audio || !audio.muted));
+      $("#volumeSlider").addEventListener("input", e => { initAudio(); audio.volume = Number(e.target.value) / 100; setMuted(false); });
+      drawChart();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
