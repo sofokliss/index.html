@@ -1365,7 +1365,7 @@
                 <div class="stat"><span>Casualties</span><strong id="reportCasualtiesText">0</strong></div>
                 <div class="stat"><span>False Alarms</span><strong id="reportFalseText">0</strong></div>
                 <div class="stat"><span>Damage</span><strong id="reportDamageText">$0M</strong></div>
-                <div class="stat"><span>Correct Calls</span><strong id="reportCorrectText">0</strong></div>
+                <div class="stat"><span>Strong Outcomes</span><strong id="reportCorrectText">0</strong></div>
                 <div class="stat"><span>Score</span><strong id="reportScoreText">0</strong></div>
               </div>
               <div id="reportMediaText" class="headline">Media channels are monitoring your first decision.</div>
@@ -1383,7 +1383,7 @@
               <div class="stat"><span>Casualties</span><strong id="casualtiesText">0</strong></div>
               <div class="stat"><span>False Alarms</span><strong id="falseAlarmText">0</strong></div>
               <div class="stat"><span>Damage</span><strong id="damageText">$0M</strong></div>
-              <div class="stat"><span>Correct Calls</span><strong id="correctText">0</strong></div>
+              <div class="stat"><span>Strong Outcomes</span><strong id="correctText">0</strong></div>
               <div class="stat"><span>Score</span><strong id="scoreText">0</strong></div>
             </div>
           </section>
@@ -1530,7 +1530,7 @@
       { id: "oceanGuardian", name: "Ocean Guardian", desc: "Keep environment above 85.", check: s => s.environment >= 85 && s.year >= 5 },
       { id: "masterScientist", name: "Master Scientist", desc: "Reach 90% prediction accuracy.", check: s => s.accuracy >= 90 },
       { id: "evacLegend", name: "Evacuation Legend", desc: "Save 100,000 people.", check: s => s.livesSaved >= 100000 },
-      { id: "perfectPrediction", name: "Perfect Prediction", desc: "Make 6 correct calls.", check: s => s.correctCalls >= 6 },
+      { id: "perfectPrediction", name: "Perfect Prediction", desc: "Earn 6 strong outcome reports.", check: s => s.correctCalls >= 6 },
       { id: "megaProtector", name: "Mega City Protector", desc: "Survive a mega tsunami.", check: s => s.megaSurvived },
       { id: "noFalseAlarms", name: "No False Alarms", desc: "Make 5 safe calls without a false alarm.", check: s => s.noFalseAlarmRun >= 5 },
       { id: "billionSaver", name: "Billion Dollar Saver", desc: "Prevent massive damage through strong defenses.", check: s => s.damage < 1000 && s.year > 10 },
@@ -1576,6 +1576,12 @@
 
     function money(value) {
       return "$" + Math.round(value).toLocaleString() + "M";
+    }
+
+    function moneySigned(value) {
+      const rounded = Math.round(value);
+      const sign = rounded >= 0 ? "+" : "-";
+      return `${sign}$${Math.abs(rounded).toLocaleString()}M`;
     }
 
     function createNewState() {
@@ -1813,6 +1819,8 @@
       if (!currentCrisis) return;
       const c = currentCrisis;
       const city = state.cities.find(item => item.name === c.targetCity);
+      const budgetBeforeDecision = state.budget;
+      const trustBeforeDecision = state.trust;
       const trafficPenalty = (state.traffic + city.traffic + state.panic * 0.55) / 4;
       const powerPenalty = state.powerGrid < 55 || city.power < 55 ? 12 : 0;
       const hospitalBonus = (city.buildings.hospital || 0) * 5;
@@ -1836,7 +1844,7 @@
         casualties = Math.max(0, Math.round(city.population * (1 - effectiveEvac / 100) * (c.trueRisk / 100) * rand(0.04, 0.12) - hospitalBonus));
         damage = Math.round((c.trueRisk * 2.2 + city.economy * 0.8) * (1 - effectiveDefense / 140));
         cost = 28 + city.population / 9000 + c.trueRisk * 0.18;
-        title = "Warning Matched the Wave Evidence";
+        title = "Warning Response Report";
         explanation = "High amplitude, fast wave speed, strong oscillations, and high estimated energy indicated a real tsunami. Warning early let citizens move before energy reached shore.";
         score = 80 + livesSaved / 950 - casualties * 0.5;
         state.trust += 7; state.support += 5; state.panic -= 7; state.environment -= c.trueRisk > 80 ? 3 : 1;
@@ -1851,7 +1859,7 @@
         state.panic += 8;
         state.tourism -= rand(2, 6);
         state.fishing -= rand(1, 4);
-        title = c.measuredRisk > 60 ? "Noisy Readings Caused a False Alarm" : "Low Readings Did Not Support Warning";
+        title = "Warning Response Report";
         explanation = c.measuredRisk > 60
           ? "The system saw suspicious signals, so the warning was defensible. False alarms are a limitation of warning systems when data is uncertain."
           : "The readings were low. Low amplitude and low energy usually mean the wave is less destructive, so evacuation costs hurt trust and the economy.";
@@ -1861,13 +1869,13 @@
         casualties = Math.max(0, Math.round(city.population * (1 - effectiveEvac / 100) * (c.trueRisk / 100) * rand(0.08, 0.18) - hospitalBonus * 0.6));
         damage = Math.round((c.trueRisk * 3 + city.economy) * (1 - effectiveDefense / 150));
         cost = 15 + damage * 0.12;
-        title = "Delayed Warning: Evidence Became Costly";
+        title = "Monitoring Response Report";
         explanation = "Waiting improved reliability, but high wave speed reduced evacuation time. A tsunami transfers energy through the ocean quickly, so delay increased casualties and damage.";
         score = -12 + livesSaved / 1200 - casualties * 0.9;
         state.trust -= 5; state.support -= 5; state.panic += 10; state.environment -= 4;
       } else if (action === "wait" && !c.threat) {
         cost = 6;
-        title = "More Data Prevented Panic";
+        title = "Monitoring Response Report";
         explanation = "Waiting allowed the agency to compare frequency, oscillations, and amplitude. The wave motion did not show enough energy transfer for a destructive tsunami.";
         score = 44 + confidence * 0.2;
         state.trust += 5; state.support += 3; state.noFalseAlarmRun += 1; state.panic -= 3;
@@ -1875,12 +1883,12 @@
         casualties = Math.max(0, Math.round(city.population * (c.trueRisk / 100) * rand(0.14, 0.32) - hospitalBonus * 0.3));
         damage = Math.round((c.trueRisk * 4.5 + city.economy * 1.8) * (1 - effectiveDefense / 180));
         cost = damage * 0.28 + casualties * 0.02;
-        title = "Severe Wave Evidence Was Missed";
+        title = "Stand-Down Response Report";
         explanation = "Tall amplitude, high energy, and strong oscillations were the key warning signs. The wave could damage the coast even though ocean water mainly oscillates while energy moves forward.";
         score = -100 - casualties * 1.1;
         state.trust -= 18; state.support -= 14; state.panic += 20; state.environment -= 9;
       } else {
-        title = "Stand Down Matched Low Readings";
+        title = "Stand-Down Response Report";
         explanation = "The event was not a tsunami. Small amplitude, low frequency activity, and limited oscillations suggested low energy at the coast.";
         score = 36;
         state.trust += 3; state.support += 2; state.noFalseAlarmRun += 1; state.panic -= 2;
@@ -1943,7 +1951,7 @@
       state.year += 1;
       yearlyEconomyTick(correct);
       initTabs();
-      showDecisionResult({ title, explanation, resultType, correct, partial, livesSaved, casualties, damage, cost, score, action });
+      showDecisionResult({ title, explanation, resultType, correct, partial, livesSaved, casualties, damage, cost, score, action, budgetDelta: state.budget - budgetBeforeDecision, trustDelta: state.trust - trustBeforeDecision });
       addFeed(title, explanation, resultType === "bad" ? "danger" : resultType);
       checkAchievements();
       currentCrisis = null;
@@ -2421,14 +2429,18 @@
     }
 
     function showDecisionResult(r) {
-      const correctText = r.correct ? "EVIDENCE MATCHED" : r.partial ? "MIXED EVIDENCE" : "EVIDENCE MISREAD";
       const savedBand = exposureBand(r.livesSaved);
       const casualtyBand = exposureBand(r.casualties);
+      const budgetText = moneySigned(r.budgetDelta);
+      const trustText = `${r.trustDelta >= 0 ? "+" : ""}${Math.round(r.trustDelta)} pts`;
+      const outcomeLabel = r.resultType === "bad" ? "Costly Result" : r.resultType === "warn" ? "Mixed Result" : "Stable Result";
       $("#resultBox").innerHTML = `
         <div class="correct-banner ${r.resultType === "bad" ? "bad" : r.resultType === "warn" ? "warn" : ""}">
-          <div class="banner-title"><span>${r.title}</span><span class="verdict">${correctText}</span></div>
+          <div class="banner-title"><span>${r.title}</span><span class="verdict">${outcomeLabel}</span></div>
           <p>${r.explanation}</p>
           <div class="stat-grid">
+            <div class="stat"><span>Budget Change</span><strong>${budgetText}</strong></div>
+            <div class="stat"><span>Trust Change</span><strong>${trustText}</strong></div>
             <div class="stat"><span>Protection Result</span><strong>${savedBand}</strong></div>
             <div class="stat"><span>Human Impact</span><strong>${casualtyBand}</strong></div>
             <div class="stat"><span>Response Cost</span><strong>${costBand(r.cost)}</strong></div>
@@ -2439,7 +2451,7 @@
           </div>
         </div>`;
       $("#resultNextIncidentBtn").addEventListener("click", generateCrisis);
-      toast(correctText + ": " + r.title, r.correct ? "good" : r.partial ? "warn" : "danger");
+      toast(`${outcomeLabel}: ${budgetText} budget, ${trustText} trust`, r.resultType === "bad" ? "danger" : r.resultType);
       playSound(r.correct ? "good" : "alarm");
     }
 
