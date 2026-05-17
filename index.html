@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tsunami Warning Command</title>
+  <title>Tsunami Warning Control</title>
   <style>
     :root {
       color-scheme: dark;
@@ -1188,13 +1188,13 @@
       <div class="start-shell">
         <div class="hero glass">
           <span class="eyebrow">Coastal Disaster Prevention Agency</span>
-          <h1>Tsunami Warning Command</h1>
+          <h1>Tsunami Warning COntrol</h1>
           <p class="hero-copy">
             Direct a tsunami early warning agency. Read earthquake and wave physics, interpret ocean sensor data,
             send warnings, evacuate coastal cities, and protect people before tsunami waves arrive.
           </p>
           <p>
-            This is not about creating tsunamis. Your job is to understand wave speed, amplitude, frequency,
+            Your job is to understand wave speed, amplitude, frequency,
             oscillations, and energy transfer well enough to reduce false alarms while keeping people safe.
           </p>
           <h3>Game Mode</h3>
@@ -1219,7 +1219,7 @@
       <div class="hud">
         <header class="top-hud glass">
           <div class="brand-row">
-            <div class="brand-title">Tsunami Warning Command</div>
+            <div class="brand-title">Tsunami Warning Control</div>
             <div id="yearPill" class="year-pill">Year 1</div>
             <div id="clockPill" class="year-pill">Jan 1 06:00</div>
             <div id="modePill" class="mode-pill">Story Mode</div>
@@ -2697,7 +2697,7 @@
       const protectedScore = state.livesSaved - state.casualties * 3;
       const invest = state.score + protectedScore / 100 + state.trust * 4 + state.support * 2 > 600;
       $("#modalBody").innerHTML = `
-        <p>${invest ? "Recommendation: continue and expand the Tsunami Warning Command system." : "Recommendation: invest in the system, but improve operations, public trust, and maintenance before the next warning season."}</p>
+        <p>${invest ? "Recommendation: continue and expand the Tsunami Warning Control system." : "Recommendation: invest in the system, but improve operations, public trust, and maintenance before the next warning season."}</p>
         <div class="end-report">
           <div class="stat"><span>Final Score</span><strong>${state.score.toLocaleString()}</strong></div>
           <div class="stat"><span>Lives Saved</span><strong>${state.livesSaved.toLocaleString()}</strong></div>
